@@ -1,0 +1,25 @@
+/* Complex multi-layer backgrounds — kept in CSS because they're unwieldy in className */
+
+.banner-bg {
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(124, 58, 237, 0.18) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 100%, rgba(59, 130, 246, 0.12) 0%, transparent 50%),
+    var(--bg-surface);
+}
+
+.message-box-bg {
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(59, 130, 246, 0.1) 0%, transparent 60%),
+    var(--bg-surface);
+}
+
+.video-box-bg {
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(124, 58, 237, 0.12) 0%, transparent 60%),
+    var(--bg-surface);
+}
+
+.home-cards-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}

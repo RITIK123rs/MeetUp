@@ -1,0 +1,89 @@
+.loginPage {
+  background-color: var(--bg-base);
+}
+
+.rightShadow {
+  height: 220px;
+  width: 220px;
+  border-radius: 100%;
+  background: #7c3aed6a;
+  filter: blur(100px);
+  left: 72%;
+  top: -40px;
+  pointer-events: none;
+}
+
+.leftShadow {
+  height: 220px;
+  width: 220px;
+  border-radius: 100%;
+  background: #3b82f680;
+  filter: blur(100px);
+  top: 60%;
+  right: 85%;
+  pointer-events: none;
+}
+
+.loginBox {
+  border: 1px solid var(--border-medium);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+}
+
+.blurBox {
+  height: 100%;
+  width: 100%;
+  background: rgba(7, 8, 14, 0.72);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: var(--radius-xl);
+}
+
+.loginData {
+  width: 100%;
+  height: 100%;
+}
+
+.logoBox {
+  background: var(--accent-gradient);
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35);
+}
+
+.inputBox {
+  color: var(--text-secondary);
+}
+
+.inputBox .label {
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.inputBox .input-wrap {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.inputBox .input-wrap:focus-within {
+  border-color: rgba(124, 58, 237, 0.5);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+}
+
+.inputBox input {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.loginButton {
+  background: var(--accent-gradient);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+}
+
+.googleButton {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border: 1px solid var(--border-medium);
+  color: var(--text-primary);
+}
+
