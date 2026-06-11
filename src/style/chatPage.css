@@ -262,7 +262,6 @@
 .chatPage .messageBubble {
   padding: 10px 14px;
   border-radius: var(--radius-lg);
-  font-size: 0.9rem;
   line-height: 1.45;
   position: relative;
   word-break: break-word;
@@ -340,4 +339,9 @@
 
 .chatPage .messageSendButton svg {
   font-size: 1.4rem;
+}
+
+.chatPage .emojiButton:hover{
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
 }

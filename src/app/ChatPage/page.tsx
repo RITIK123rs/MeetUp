@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FaSearch } from "react-icons/fa";
 import PersonBox from "./personBox";
 import { FaPlus } from "react-icons/fa";
@@ -12,10 +12,12 @@ import { BsThreeDotsVertical } from "react-icons/bs";
 import "@/style/chatPage.css";
 import MessageDate from "./messageDate";
 import Message from "./message";
+import EmojiBox from "./emojiBox";
 
 interface Message {
   id: number;
   sender: "me" | "them";
+  textMessage: boolean;
   text: string;
   createdAt: Date;
 }
@@ -49,85 +51,48 @@ const conversations: Conversation[] = [
     online: true,
     messageGroups: [
       {
-        date: new Date("9 June 2026"),
-        chats: [
-          { id: 1, sender: "them", text: "Hey Ritik!", createdAt: new Date() },
-          { id: 2, sender: "me", text: "Hi Sarah 👋", createdAt: new Date() },
-          {
-            id: 3,
-            sender: "them",
-            text: "How's your project going?",
-            createdAt: new Date(),
-          },
-          {
-            id: 4,
-            sender: "me",
-            text: "Pretty good so far.",
-            createdAt: new Date(),
-          },
-        ],
-      },
-      {
         date: new Date("10 June 2026"),
         chats: [
           {
             id: 1,
-            sender: "me",
-            text: "Hey",
+            sender: "them",
+            textMessage: true,
+            text: "Hey Ritik 👋",
             createdAt: new Date(),
           },
           {
             id: 2,
-            sender: "me",
-            text: "Are you free today?",
+            sender: "them",
+            textMessage: true,
+            text: "How are you?",
             createdAt: new Date(),
           },
           {
             id: 3,
             sender: "me",
-            text: "Need help with something",
+            textMessage: true,
+            text: "Doing great 😄",
             createdAt: new Date(),
           },
           {
             id: 4,
-            sender: "them",
-            text: "Hey!",
+            sender: "me",
+            textMessage: true,
+            text: "Working on a chat app.",
             createdAt: new Date(),
           },
           {
             id: 5,
             sender: "them",
-            text: "Sorry, was busy",
-            createdAt: new Date(),
-          },
-          {
-            id: 6,
-            sender: "them",
-            text: "What's up?",
-            createdAt: new Date(),
-          },
-          {
-            id: 7,
-            sender: "me",
-            text: "Working on a chat app",
-            createdAt: new Date(),
-          },
-          {
-            id: 8,
-            sender: "me",
-            text: "Trying to improve the UI",
-            createdAt: new Date(),
-          },
-          {
-            id: 9,
-            sender: "them",
+            textMessage: true,
             text: "Nice! React or Next.js?",
             createdAt: new Date(),
           },
           {
-            id: 10,
+            id: 6,
             sender: "me",
-            text: "Next.js with TypeScript",
+            textMessage: true,
+            text: "Next.js + TypeScript 🚀",
             createdAt: new Date(),
           },
         ],
@@ -146,33 +111,29 @@ const conversations: Conversation[] = [
     online: false,
     messageGroups: [
       {
-        date: new Date("8 June 2026"),
+        date: new Date("10 June 2026"),
         chats: [
           {
             id: 1,
             sender: "them",
-            text: "Are you available for a meeting?",
+            textMessage: true,
+            text: "Meeting moved to 3 PM.",
             createdAt: new Date(),
           },
           {
             id: 2,
             sender: "me",
-            text: "Yes, what time?",
+            textMessage: true,
+            text: "Thanks for letting me know 👍",
             createdAt: new Date(),
           },
-          { id: 3, sender: "them", text: "2 PM works?", createdAt: new Date() },
-        ],
-      },
-      {
-        date: new Date("10 June 2026"),
-        chats: [
           {
-            id: 4,
+            id: 3,
             sender: "them",
-            text: "Meeting moved to 3 PM.",
+            textMessage: true,
+            text: "No problem.",
             createdAt: new Date(),
           },
-          { id: 5, sender: "me", text: "Noted 👍", createdAt: new Date() },
         ],
       },
     ],
@@ -189,35 +150,34 @@ const conversations: Conversation[] = [
     online: true,
     messageGroups: [
       {
-        date: new Date("7 June 2026"),
+        date: new Date("10 June 2026"),
         chats: [
           {
             id: 1,
             sender: "me",
-            text: "Can you share the design files?",
+            textMessage: true,
+            text: "Can you send the designs?",
             createdAt: new Date(),
           },
           {
             id: 2,
             sender: "them",
-            text: "Sure, give me a minute.",
+            textMessage: true,
+            text: "Sure, sending now 📎",
             createdAt: new Date(),
           },
-        ],
-      },
-      {
-        date: new Date("10 June 2026"),
-        chats: [
           {
             id: 3,
             sender: "them",
-            text: "Sent you the files 📎",
+            textMessage: true,
+            text: "Check your inbox.",
             createdAt: new Date(),
           },
           {
             id: 4,
             sender: "me",
-            text: "Got them, thanks!",
+            textMessage: true,
+            text: "Received. Thanks 😊",
             createdAt: new Date(),
           },
         ],
@@ -236,41 +196,41 @@ const conversations: Conversation[] = [
     online: true,
     messageGroups: [
       {
-        date: new Date("5 June 2026"),
+        date: new Date("10 June 2026"),
         chats: [
           {
             id: 1,
             sender: "me",
-            text: "Want to work on a side project?",
+            textMessage: true,
+            text: "Want to build something together?",
             createdAt: new Date(),
           },
           {
             id: 2,
             sender: "them",
-            text: "Sure! What's the idea?",
+            textMessage: true,
+            text: "Sure! What do you have in mind?",
             createdAt: new Date(),
           },
           {
             id: 3,
             sender: "me",
-            text: "A real-time chat application.",
+            textMessage: true,
+            text: "A real-time chat application 💬",
             createdAt: new Date(),
           },
-        ],
-      },
-      {
-        date: new Date("10 June 2026"),
-        chats: [
           {
             id: 4,
             sender: "them",
+            textMessage: true,
             text: "That sounds great 👍",
             createdAt: new Date(),
           },
           {
             id: 5,
             sender: "me",
-            text: "Let's start this weekend.",
+            textMessage: true,
+            text: "Let's start this weekend 🚀",
             createdAt: new Date(),
           },
         ],
@@ -280,11 +240,72 @@ const conversations: Conversation[] = [
 ];
 
 export default function ChatPage() {
-  const [activeId, setActiveId] = useState<number>(conversations[0].id);
-  const [activeChat, setActiveChat] = useState<Conversation>(
-    conversations.find((c) => c.id === activeId) ?? conversations[0],
-  );
+  const [activeChat, setActiveChat] = useState<Conversation>(conversations[0]);
+  const [emojiActive, setEmojiActive] = useState<boolean>(false);
   const [sendMessage, setSendMessage] = useState<string>("");
+  const bottomRef = useRef<HTMLSpanElement | null>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+  }, [activeChat]);
+
+  function displayMessage(messageType: string, emoji: string = ""): void {
+    console.log(messageType, emoji);
+
+    if (sendMessage == "" && messageType == "text") {
+      return;
+    }
+    const lastChatIndex: number = activeChat.messageGroups.length - 1;
+
+    if (
+      activeChat.lastMessageAt.toDateString() !=
+      activeChat.messageGroups[lastChatIndex].date.toDateString()
+    ) {
+      setActiveChat((prev) => ({
+        ...prev,
+        messageGroups: [
+          ...prev.messageGroups,
+          {
+            date: new Date(),
+            chats: [
+              {
+                id: 1,
+                sender: "me",
+                textMessage: messageType == "text" ? true : false,
+                text: messageType == "text" ? sendMessage : emoji,
+                createdAt: new Date(),
+              },
+            ],
+          },
+        ],
+      }));
+    } else {
+      setActiveChat((prev) => ({
+        ...prev,
+        messageGroups: prev.messageGroups.map((group, index) =>
+          index == lastChatIndex
+            ? {
+                ...group,
+                chats: [
+                  ...group.chats,
+                  {
+                    id: 2,
+                    sender: "me",
+                    textMessage: messageType == "text" ? true : false,
+                    text: messageType == "text" ? sendMessage : emoji,
+                    createdAt: new Date(),
+                  },
+                ],
+              }
+            : group,
+        ),
+      }));
+    }
+    console.log(activeChat);
+    if (messageType == "text") setSendMessage("");
+  }
 
   return (
     <div className="chatPage flex h-full">
@@ -309,20 +330,19 @@ export default function ChatPage() {
           {conversations.map((conversation) => (
             <PersonBox
               key={conversation.id}
-              active={conversation.id === activeId}
               name={conversation.name}
               initials={conversation.initials}
               preview={conversation.preview}
               lastMessageAt={conversation.lastMessageAt}
               unreadCount={conversation.unreadCount}
               online={conversation.online}
-              onClick={() => setActiveId(conversation.id)}
+              onClick={() => setActiveChat(conversation)}
             />
           ))}
         </div>
       </aside>
 
-      <section className="chatMain flex-1 min-w-0 h-full">
+      <section className="chatMain flex-1 min-w-0 h-full relative">
         <header className="chatHeader flex items-center px-4 py-3">
           <div className="avatar w-11 h-11 rounded-full flex items-center justify-center">
             {activeChat.initials}
@@ -342,20 +362,20 @@ export default function ChatPage() {
         </header>
 
         <div className="messageBoxScreen overflow-y-auto px-4 py-4 flex flex-col">
-          {/* <MessageDate />
-          <Message /> */}
-
           {activeChat.messageGroups.map((data, index) => {
             return (
-              <span key={index}>
-                <MessageDate date={data.date} />
-                <Message chatData={data.chats} />
-              </span>
+              <>
+                <span key={index}>
+                  <MessageDate date={data.date} />
+                  <Message chatData={data.chats} />
+                </span>
+                <span className="scrollBottom" ref={bottomRef} />
+              </>
             );
           })}
-
-
         </div>
+
+        <EmojiBox emojiState={emojiActive} displayMessage={displayMessage} />
 
         <footer className="messageInputBar flex items-center">
           <button
@@ -365,7 +385,14 @@ export default function ChatPage() {
           >
             <FiPaperclip />
           </button>
-          <button className="inputIconBtn" type="button" aria-label="Emoji">
+          <button
+            className="inputIconBtn"
+            type="button"
+            aria-label="Emoji"
+            onClick={() =>
+              emojiActive == true ? setEmojiActive(false) : setEmojiActive(true)
+            }
+          >
             <FaRegFaceSmile />
           </button>
           <input
@@ -389,56 +416,7 @@ export default function ChatPage() {
             className="messageSendButton"
             type="button"
             aria-label="Send message"
-            onClick={() => {
-              if (sendMessage == "") {
-                return;
-              }
-              const lastChatIndex: number = activeChat.messageGroups.length - 1;
-
-              if (
-                activeChat.lastMessageAt.toDateString() !=
-                activeChat.messageGroups[lastChatIndex].date.toDateString()
-              ) {
-                setActiveChat((prev) => ({
-                  ...prev,
-                  messageGroups: [
-                    ...prev.messageGroups,
-                    {
-                      date: new Date(),
-                      chats: [
-                        {
-                          id: 1,
-                          sender: "me",
-                          text: sendMessage,
-                          createdAt: new Date(),
-                        },
-                      ],
-                    },
-                  ],
-                }));
-              } else {
-                setActiveChat((prev) => ({
-                  ...prev,
-                  messageGroups: prev.messageGroups.map((group, index) =>
-                    index == lastChatIndex
-                      ? {
-                          ...group,
-                          chats: [
-                            ...group.chats,
-                            {
-                              id: 2,
-                              sender: "me",
-                              text: sendMessage,
-                              createdAt: new Date(),
-                            },
-                          ],
-                        }
-                      : group,
-                  ),
-                }));
-              }
-              setSendMessage("");
-            }}
+            onClick={() => displayMessage("text")}
           >
             <FiSend />
           </button>
