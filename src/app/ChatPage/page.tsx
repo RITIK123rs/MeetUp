@@ -13,6 +13,7 @@ import "@/style/chatPage.css";
 import MessageDate from "./messageDate";
 import Message from "./message";
 import EmojiBox from "./emojiBox";
+import { ChatEmptyState, SidebarEmptyState } from "./chatEmptyState";
 
 interface Message {
   id: number;
@@ -240,7 +241,7 @@ const conversations: Conversation[] = [
 ];
 
 export default function ChatPage() {
-  const [activeChat, setActiveChat] = useState<Conversation>(conversations[0]);
+  const [activeChat, setActiveChat] = useState<Conversation | null >(null);
   const [emojiActive, setEmojiActive] = useState<boolean>(false);
   const [sendMessage, setSendMessage] = useState<string>("");
   const bottomRef = useRef<HTMLSpanElement | null>(null);
@@ -254,6 +255,8 @@ export default function ChatPage() {
   function displayMessage(messageType: string, emoji: string = ""): void {
     console.log(messageType, emoji);
 
+    if (!activeChat) return;
+
     if (sendMessage == "" && messageType == "text") {
       return;
     }
@@ -263,15 +266,15 @@ export default function ChatPage() {
       activeChat.lastMessageAt.toDateString() !=
       activeChat.messageGroups[lastChatIndex].date.toDateString()
     ) {
-      setActiveChat((prev) => ({
-        ...prev,
+      setActiveChat({
+        ...activeChat,
         messageGroups: [
-          ...prev.messageGroups,
+          ...activeChat.messageGroups,
           {
             date: new Date(),
             chats: [
               {
-                id: 1,
+                id: Date.now(),
                 sender: "me",
                 textMessage: messageType == "text" ? true : false,
                 text: messageType == "text" ? sendMessage : emoji,
@@ -280,18 +283,18 @@ export default function ChatPage() {
             ],
           },
         ],
-      }));
+      });
     } else {
-      setActiveChat((prev) => ({
-        ...prev,
-        messageGroups: prev.messageGroups.map((group, index) =>
+      setActiveChat({
+        ...activeChat,
+        messageGroups: activeChat.messageGroups.map((group, index) =>
           index == lastChatIndex
             ? {
                 ...group,
                 chats: [
                   ...group.chats,
                   {
-                    id: 2,
+                    id: Date.now(),
                     sender: "me",
                     textMessage: messageType == "text" ? true : false,
                     text: messageType == "text" ? sendMessage : emoji,
@@ -301,7 +304,7 @@ export default function ChatPage() {
               }
             : group,
         ),
-      }));
+      });
     }
     console.log(activeChat);
     if (messageType == "text") setSendMessage("");
@@ -326,23 +329,33 @@ export default function ChatPage() {
           />
         </div>
 
-        <div className="personBoxList flex flex-col gap-1 mt-4 overflow-y-auto flex-1 min-h-0">
-          {conversations.map((conversation) => (
-            <PersonBox
-              key={conversation.id}
-              name={conversation.name}
-              initials={conversation.initials}
-              preview={conversation.preview}
-              lastMessageAt={conversation.lastMessageAt}
-              unreadCount={conversation.unreadCount}
-              online={conversation.online}
-              onClick={() => setActiveChat(conversation)}
-            />
-          ))}
-        </div>
+        {conversations.length == 0 ? (
+          <SidebarEmptyState />
+        ) : (
+          <div className="personBoxList flex flex-col gap-1 mt-4 overflow-y-auto flex-1 min-h-0">
+            {conversations.map((conversation) => (
+              <PersonBox
+                key={conversation.id}
+                name={conversation.name}
+                initials={conversation.initials}
+                preview={conversation.preview}
+                lastMessageAt={conversation.lastMessageAt}
+                unreadCount={conversation.unreadCount}
+                online={conversation.online}
+                onClick={() => setActiveChat(conversation)}
+              />
+            ))}
+          </div>
+        )}
       </aside>
 
       <section className="chatMain flex-1 min-w-0 h-full relative">
+         { conversations.length==0 ? (
+          <ChatEmptyState variant="no-contacts" />
+        ) : !activeChat ? (
+          <ChatEmptyState variant="no-selection" />
+        ) : (
+          <>
         <header className="chatHeader flex items-center px-4 py-3">
           <div className="avatar w-11 h-11 rounded-full flex items-center justify-center">
             {activeChat.initials}
@@ -421,6 +434,8 @@ export default function ChatPage() {
             <FiSend />
           </button>
         </footer>
+        </>
+        )}
       </section>
     </div>
   );
