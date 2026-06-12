@@ -18,10 +18,32 @@ interface LoginData {
   password: string;
 }
 
-interface GoogleUser {
+interface Contacts {
+  name: string;
+  userId: string;
+}
+
+interface Chats {
+  name: string[];
+  UserId: string[];
+  preview: string;
+  isGroup: boolean;
+  chatId: string;
+  unreadCount: number;
+  lastMessageTime: Date;
+}
+
+interface UserData {
+  success: boolean;
+  id: string;
   name: string;
   email: string;
   picture: string;
+  contactNo: number;
+  groupNo: number;
+  videoChatNo: number;
+  contacts: Contacts[];
+  chats: Chats[];
 }
 
 export default function LoginPage() {
@@ -57,23 +79,16 @@ export default function LoginPage() {
         }),
       });
 
-      const userData = await response.json();
+      const userData:UserData = await response.json();
+      console.log(userData);
 
       if (userData.success) {
         localStorage.setItem(
           "user",
-          JSON.stringify({
-            name: userData.name,
-            email: userData.email,
-            picture: userData.picture,
-          }),
+          JSON.stringify(userData),
         );
         Dispatch(
-          setUser({
-            name: userData.name,
-            email: userData.email,
-            picture: userData.picture,
-          }),
+          setUser(userData),
         );
         router.push("/homePage");
       } else {

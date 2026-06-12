@@ -10,10 +10,14 @@ const userSchema=new mongoose.Schema({
     email:{
         type:String,
         required: true,
+        unique: true,
+    },
+    password:{
+        type:String,
+        required: true,
     },
     picture:{
         type:String,
-        required: true,
         default: "public/userPic.jpg"
     },
     contactNo: {
@@ -31,18 +35,17 @@ const userSchema=new mongoose.Schema({
     contacts:[
         {
             name: String,
-            id: String,
-            userId: ObjectId,
+            userId: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
         }
     ],
-    chat:[
+    chats:[
         {
             name:[String],
-            id: [String],
+            UserId: [{ type: mongoose.Schema.Types.ObjectId, ref: "user" }],
             preview: String,
             isGroup: Boolean,
-            chatId: ObjectId,
-            unreadCount: Number,
+            chatId: { type: mongoose.Schema.Types.ObjectId, ref: "chat" },
+            unreadCount:  { type: Number, default: 0 },
             lastMessageTime: {
                 type: Date,
                 default: Date.now,
@@ -51,6 +54,6 @@ const userSchema=new mongoose.Schema({
     ]
 })
 
-const user=mongoose.model("user", userSchema );
+const user=mongoose.models.user || mongoose.model("user", userSchema );
 
 export default user;

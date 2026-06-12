@@ -5,7 +5,7 @@ const chatSchema = new mongoose.Schema({
   users: [
     {
       name: String,
-      userId: ObjectId,
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
     },
   ],
   lastMessageAt: Date,
@@ -18,7 +18,7 @@ const chatSchema = new mongoose.Schema({
       },
       chats: [
         {
-          sender: ObjectId,
+          sender: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
           textMessage: Boolean,
           text: String,
           createdAt: {             
@@ -31,6 +31,6 @@ const chatSchema = new mongoose.Schema({
   ],
 });
 
-const chat = mongoose.model("chat", chatSchema);
+const chat =mongoose.models.chat || mongoose.model("chat", chatSchema);
 
 export default chat;

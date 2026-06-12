@@ -1,10 +1,34 @@
 import { NextResponse, NextRequest } from "next/server";
+import user from "@/models/user";
+import connectDB from "@/lib/dbConnection";
+import { ObjectId } from "mongodb";
+
+interface Contacts {
+  name: string;
+  userId: ObjectId;
+}
+
+interface Chats {
+  name: string[];
+  UserId: ObjectId[];
+  preview: string;
+  isGroup: boolean;
+  chatId: ObjectId;
+  unreadCount: number;
+  lastMessageTime: Date;
+}
 
 interface UserResponse {
-    success: boolean,
-    name: string,
-    email: string,
-    picture: string,
+  success: boolean;
+  id: ObjectId;
+  name: string;
+  email: string;
+  picture: string;
+  contactNo: number;
+  groupNo: number;
+  videoChatNo: number;
+  contacts: Contacts[];
+  chats: Chats[];
 }
 
 export async function POST(req: NextRequest) {
@@ -19,14 +43,53 @@ export async function POST(req: NextRequest) {
         },
       },
     );
+
     const userData = await response.json();
     console.log(userData);
-    const result: UserResponse = {
-      success: true,
-      name: userData.name,
-      email: userData.email,
-      picture: userData.picture,
-    };
+
+    await connectDB();
+
+    const searchUser = await user.findOne({ email: userData.email });
+
+    console.log(searchUser);
+
+    let result: UserResponse;
+
+    if (!searchUser) {
+      const fetchData = await user.create({
+        name: userData.name,
+        password: process.env.GOOGLE_LOGIN_PASSWORD,
+        email: userData.email,
+        picture: userData.picture,
+      });
+
+      result = {
+        success: true,
+        id: fetchData._id,
+        name: userData.name,
+        email: userData.email,
+        picture: userData.picture,
+        contactNo: 0,
+        groupNo: 0,
+        videoChatNo: 0,
+        contacts: [],
+        chats: [],
+      };
+    } else {
+      result = {
+        success: true,
+        id: searchUser._id,
+        name: userData.name,
+        email: userData.email,
+        picture: userData.picture,
+        contactNo: searchUser.contactNo,
+        groupNo: searchUser.groupNo,
+        videoChatNo: searchUser.videoChatNo,
+        contacts: searchUser.contacts as Contacts[],
+        chats: searchUser.chats as Chats[],
+      };
+    }
+
     return NextResponse.json(result);
   } catch (err) {
     console.log(err);
