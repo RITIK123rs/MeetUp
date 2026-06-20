@@ -34,8 +34,12 @@ export default function ChatPage() {
   const [activeChat, setActiveChat] = useState<null | any>(null);
   const [emojiActive, setEmojiActive] = useState<boolean>(false);
   const [sendMessage, setSendMessage] = useState<string>("");
+  const [userList, setUserList] = useState<string[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string>("");
   const bottomRef = useRef<HTMLSpanElement | null>(null);
   const Dispatch = useDispatch();
+  const activeChatIdRef = useRef(activeChatId);
+  const activeChatRef = useRef(activeChat);
 
   const personChatList: Chats[] = useSelector(
     (state: RootState) => state.user.chats,
@@ -45,15 +49,17 @@ export default function ChatPage() {
     (state: RootState) => state.user.id,
   );
 
-  useEffect(()=>{
-    socket.on("connect", () => {
-      console.log("Connected:", socket.id);
-    });
+  useEffect(() => {
+    activeChatIdRef.current = activeChatId;
+  }, [activeChatId]);
+  useEffect(() => {
+    activeChatRef.current = activeChat;
+  }, [activeChat]);
 
-    return () => {
-      socket.disconnect();
-    };
-  },[]);
+  useEffect(() => {
+    socket.on("newMessage", handleNewMessage);
+    return () => socket.off("newMessage", handleNewMessage);
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
@@ -61,11 +67,77 @@ export default function ChatPage() {
     });
   }, [activeChat]);
 
+  function handleNewMessage({
+    chatId,
+    senderId,
+    message,
+  }: {
+    chatId: string;
+    senderId: string;
+    message: string;
+  }):void {
+    if (activeChatIdRef.current !== chatId) return;
+    if (!activeChatRef.current) return;
+
+    const current = activeChatRef.current;
+    const isNewDay =
+      new Date(current.lastMessageAt).toDateString() !==
+      new Date().toDateString();
+
+    if (isNewDay) {
+      const data = {
+        date: new Date(),
+        chats: [
+          {
+            id: Date.now(),
+            sender: senderId,
+            textMessage: true,
+            text: message,
+            createdAt: new Date(),
+          },
+        ],
+      };
+      setActiveChat({
+        ...current,
+        messageGroups: [...current.messageGroups, data],
+        lastMessage: message,
+        lastMessageAt: new Date(),
+      });
+    } else {
+      const data = {
+        id: Date.now(),
+        sender: senderId,
+        textMessage: true,
+        text: message,
+        createdAt: new Date(),
+      };
+      const lastChatIndex = current.messageGroups.length - 1;
+      setActiveChat({
+        ...current,
+        messageGroups: current.messageGroups.map((group, index) =>
+          index === lastChatIndex
+            ? { ...group, chats: [...group.chats, data] }
+            : group,
+        ),
+        lastMessage: message,
+        lastMessageAt: new Date(),
+      });
+    }
+  }
+
   async function selectedChat(chatId: string, unreadCount: number) {
+    setActiveChatId(chatId);
     await fetch(`http://localhost:3000/api/chat/${chatId}`)
       .then((res) => res.json())
       .then((data) => {
         console.log(data);
+        let filterData: string[] = [];
+        for (let user of data.data.users) {
+          if (user.userId != userId) filterData.push(user.userId);
+        }
+        console.log("filter");
+        setUserList(filterData);
+        console.log(filterData);
         setActiveChat(data.data);
       })
       .catch((err) => console.log(err));
@@ -74,19 +146,20 @@ export default function ChatPage() {
       await fetch(`http://localhost:3000/api/chat/${chatId}`, {
         method: "PATCH",
         headers: {
-          "Content-Type":"application/json",
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({userId}) 
+        body: JSON.stringify({ userId }),
       })
         .then((res) => res.json())
         .then((data) => {
           console.log(data);
-          if (data.success)
+          if (data.success) {
             Dispatch(
               updateChatList({
                 chats: data.chats,
               }),
             );
+          }
         })
         .catch((err) => console.log(err));
     }
@@ -102,48 +175,75 @@ export default function ChatPage() {
     }
     const lastChatIndex: number = activeChat.messageGroups.length - 1;
 
+    console.log(
+      new Date(activeChat.lastMessageAt).toDateString(),
+      new Date().toDateString(),
+    );
+
     if (
       new Date(activeChat.lastMessageAt).toDateString() !=
-      new Date(activeChat.messageGroups[lastChatIndex].date).toDateString()
+      new Date().toDateString()
     ) {
-      setActiveChat({
-        ...activeChat,
-        messageGroups: [
-          ...activeChat.messageGroups,
+      const data = {
+        date: new Date(),
+        chats: [
           {
-            date: new Date(),
-            chats: [
-              {
-                id: Date.now(),
-                sender: "me",
-                textMessage: messageType == "text" ? true : false,
-                text: messageType == "text" ? sendMessage : emoji,
-                createdAt: new Date(),
-              },
-            ],
+            id: Date.now(),
+            sender: userId,
+            textMessage: messageType == "text" ? true : false,
+            text: messageType == "text" ? sendMessage : emoji,
+            createdAt: new Date(),
           },
         ],
+      };
+
+      console.log(data);
+
+      setActiveChat({
+        ...activeChat,
+        messageGroups: [...activeChat.messageGroups, data],
+        lastMessage: sendMessage,
+        lastMessageAt: new Date(),
+      });
+
+      socket.emit("newMessage-new", {
+        userList,
+        chatId: activeChatId,
+        senderId: userId,
+        data,
+        sendMessage,
       });
     } else {
+      const data = {
+        id: Date.now(),
+        sender: userId,
+        textMessage: messageType == "text" ? true : false,
+        text: messageType == "text" ? sendMessage : emoji,
+        createdAt: new Date(),
+      };
+
+      console.log(data);
+
       setActiveChat({
         ...activeChat,
         messageGroups: activeChat.messageGroups.map((group, index) =>
           index == lastChatIndex
             ? {
                 ...group,
-                chats: [
-                  ...group.chats,
-                  {
-                    id: Date.now(),
-                    sender: "me",
-                    textMessage: messageType == "text" ? true : false,
-                    text: messageType == "text" ? sendMessage : emoji,
-                    createdAt: new Date(),
-                  },
-                ],
+                chats: [...group.chats, data],
               }
             : group,
         ),
+        lastMessage: sendMessage,
+        lastMessageAt: new Date(),
+      });
+
+      socket.emit("newMessage-existing", {
+        userList,
+        chatId: activeChatId,
+        senderId: userId,
+        data,
+        sendMessage,
       });
     }
     console.log(activeChat);
@@ -182,7 +282,11 @@ export default function ChatPage() {
                 lastMessageAt={data.lastMessageTime}
                 unreadCount={data.unreadCount}
                 online={true}
-                onClick={() => selectedChat(data.chatId, data.unreadCount)}
+                onClick={() => {
+                  selectedChat(data.chatId, data.unreadCount);
+                  setActiveChatId(data.chatId);
+                  console.log(activeChatId);
+                }}
               />
             ))}
           </div>
@@ -264,7 +368,7 @@ export default function ChatPage() {
                 rows={1}
                 value={sendMessage}
                 onChange={(e) => {
-                  console.log(e.target.value);
+                  // console.log(e.target.value);
                   setSendMessage(e.target.value);
                 }}
               />

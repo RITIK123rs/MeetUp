@@ -6,13 +6,15 @@ import { FaRegMessage } from "react-icons/fa6";
 import { MdOutlineLogout } from "react-icons/md";
 import "@/style/homepage.css";
 import ChatPage from "../ChatPage/page";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Banner from "./banner";
 import MessageBox from "./messageBox";
 import VideoBox from "./videoBox";
 import { LoginUserCheck } from "@/lib/login";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/redux/store";
+import { useRouter } from "next/navigation";
+import { socket } from "@/lib/socket";
 
 const menuBtnBase: string =
   "w-12 h-12 flex rounded-xl items-center justify-center text-text-secondary transition-colors duration-150 hover:bg-[var(--bg-hover)] hover:text-text-primary";
@@ -31,9 +33,41 @@ function HomePageMain() {
 }
 
 export default function homePage() {
+  const router = useRouter();
   const [mainContent, setMainContent] = useState<string>("homePage");
-  const userPicture: string = useSelector((state: RootState) => state.user.picture)!;
-  const userEmail: string  = useSelector((state: RootState) => state.user.email)!;
+  const userPicture: string = useSelector(
+    (state: RootState) => state.user.picture,
+  )!;
+  const userEmail: string = useSelector(
+    (state: RootState) => state.user.email,
+  )!;
+
+  useEffect(() => {
+  const stored = localStorage.getItem("user");
+  if (!stored) {
+    router.push("/");
+    return;
+  }
+
+  if (socket.connected ) {
+    console.log("Socket is already connected");
+    return;
+  }
+
+  const userData = JSON.parse(stored);
+
+  socket.auth = {
+    id: userData.id,
+    name: userData.name,
+    email: userData.email,
+  };
+  socket.connect();
+
+  return()=>{
+    socket.disconnect();
+  }
+
+}, []);
 
   return (
     <div className="bg-bg-base w-screen h-screen flex">

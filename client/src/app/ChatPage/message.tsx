@@ -11,7 +11,9 @@ interface MessagePropr {
 }
 
 export default function Message({ chatData }: { chatData: MessagePropr[] }) {
-  const userId: string | NullExpression = useSelector((state: RootState) => state.user.id);
+  const userId: string | NullExpression = useSelector(
+    (state: RootState) => state.user.id,
+  );
 
   return (
     <>
@@ -19,11 +21,11 @@ export default function Message({ chatData }: { chatData: MessagePropr[] }) {
         return (
           <div
             key={index}
-            className={`messageRow ${data.sender == userId ? "otherMessage" : "sent myMessage"} `}
+            className={`messageRow ${data.sender != userId ? "otherMessage" : "sent myMessage"} `}
           >
-            {data.sender === userId && (
+            {data.sender != userId && (
               <div
-                className={`messageAvatar ${chatData[index + 1]?.sender == userId && "invisible"} `}
+                className={`messageAvatar ${((index+1==chatData.length)? false : (chatData[index + 1]?.sender != userId)) && "invisible"} `}
               >
                 RS
               </div>

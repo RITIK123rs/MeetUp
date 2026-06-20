@@ -11,7 +11,9 @@ import { setUser } from "@/redux/userSlice";
 import { useSelector, useDispatch } from "react-redux";
 
 import "../style/loginPage.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { socket } from "@/lib/socket";
+import { RootState } from "@/redux/store";
 
 interface LoginData {
   email: string;
@@ -49,6 +51,7 @@ interface UserData {
 export default function LoginPage() {
   const router = useRouter();
   const Dispatch = useDispatch();
+  const data = useSelector((state: RootState) => state.user);
 
   const [loginData, setLoginData] = useState<LoginData>({
     email: "",
@@ -63,7 +66,7 @@ export default function LoginPage() {
     }));
   }
 
-  async function loginAction(e:React.FormEvent<HTMLFormElement>) {
+  async function loginAction(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const response = await fetch(
       `http://localhost:3000/api/auth/login?email=${loginData.email}&password=${loginData.password}`,
@@ -73,6 +76,14 @@ export default function LoginPage() {
     if (userData.success) {
       localStorage.setItem("user", JSON.stringify(userData));
       Dispatch(setUser(userData));
+      console.log("login socket.io");
+      socket.disconnect();
+      socket.auth = {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+      };
+      socket.connect();
       router.push("/homePage");
     } else {
       console.log("Login Failed");
@@ -97,6 +108,14 @@ export default function LoginPage() {
       if (userData.success) {
         localStorage.setItem("user", JSON.stringify(userData));
         Dispatch(setUser(userData));
+        console.log("login socket.io");
+        socket.disconnect();
+        socket.auth = {
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+        };
+        socket.connect();
         router.push("/homePage");
       } else {
         console.log("Google Login Failed");
