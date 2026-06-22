@@ -16,7 +16,11 @@ import EmojiBox from "./emojiBox";
 import { useSelector, useDispatch } from "react-redux";
 import { ChatEmptyState, SidebarEmptyState } from "./chatEmptyState";
 import { RootState } from "@/redux/store";
-import { updateChatList } from "@/redux/userSlice";
+import {
+  updateChatList,
+  updateUnReadMessage,
+  updateActiveChat,
+} from "@/redux/userSlice";
 import { socket } from "@/lib/socket";
 
 interface Chats {
@@ -75,8 +79,19 @@ export default function ChatPage() {
     chatId: string;
     senderId: string;
     message: string;
-  }):void {
-    if (activeChatIdRef.current !== chatId) return;
+  }): void {
+    if (activeChatIdRef.current !== chatId) {
+      console.log("non active chat message");
+      Dispatch(
+        updateUnReadMessage({
+          message,
+          chatId,
+        }),
+      );
+
+      return;
+    }
+
     if (!activeChatRef.current) return;
 
     const current = activeChatRef.current;
@@ -247,6 +262,12 @@ export default function ChatPage() {
       });
     }
     console.log(activeChat);
+    Dispatch(
+      updateActiveChat({
+        message:sendMessage,
+        chatId:activeChatId,
+      }),
+    );
     if (messageType == "text") setSendMessage("");
   }
 
@@ -285,7 +306,12 @@ export default function ChatPage() {
                 onClick={() => {
                   selectedChat(data.chatId, data.unreadCount);
                   setActiveChatId(data.chatId);
-                  console.log(activeChatId);
+                  console.log({
+                    userId,
+                    sendId: data.UserId[0],
+                    chatId: data.chatId,
+                  });
+                  socket.emit("activeChat", { userId, chatId: data.chatId });
                 }}
               />
             ))}

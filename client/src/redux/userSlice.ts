@@ -58,9 +58,20 @@ const userSlice = createSlice({
     updateChatList: (state, action) =>{
       state.chats  = action.payload.chats;
     },
+    updateUnReadMessage: (state,action)=>{
+      const index = state.chats.findIndex(chat => chat.chatId === action.payload.chatId);
+      state.chats[index].preview=action.payload.message;
+      state.chats[index].unreadCount+=1;
+      state.chats[index].lastMessageTime=new Date();
+    },
+    updateActiveChat: (state,action)=>{
+      const index = state.chats.findIndex(chat => chat.chatId === action.payload.chatId);
+      state.chats[index].preview=action.payload.message;
+      state.chats[index].lastMessageTime=new Date();
+    },
     clearUser: () => initialState,
   },
 });
 
-export const { setUser,updateChatList,clearUser } = userSlice.actions;
+export const { setUser,updateChatList,updateUnReadMessage,updateActiveChat,clearUser } = userSlice.actions;
 export default userSlice.reducer;

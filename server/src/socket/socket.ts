@@ -1,9 +1,10 @@
 import { Server } from "socket.io";
-import { addMessage } from "./handlers/dbMessage";
+import { addMessage, updateUserMessage } from "./handlers/dbMessage";
 
 interface ActiveUser {
   [userId: string]: {
     socketId: string;
+    activeChatId?: string;
     name: string | undefined;
     email: string | undefined;
   };
@@ -31,24 +32,39 @@ export default function initializeSocket(io: Server) {
     console.log("User Connected : ", socket.id);
     console.log(activeUser);
 
+    socket.on("activeChat", ({ userId, chatId }) => {
+      activeUser[userId].activeChatId = chatId;
+    });
+
     socket.on("newMessage-new", ({ userList, chatId, data, sendMessage }) => {
       console.log(userList, chatId, data, sendMessage);
-      addMessage("new", chatId, data);
+      addMessage("new", chatId, data, sendMessage);
+      const senderId: string = Object.keys(activeUser).find(
+        (id) => activeUser[id].socketId == socket.id,
+      ) as string;
       for (const userId of userList) {
-        console.log(
-          "send message to other : ",
-          userId.socketId,
-          chatId,
-          sendMessage,
-        );
-        io.to(userId.socketId).emit("newMessage", { chatId, sendMessage });
+        if (userId in activeUser) {
+          console.log(
+            "send message to other : ",
+            userId.socketId,
+            chatId,
+            sendMessage,
+          );
+          io.to(userId.socketId).emit("newMessage", { chatId, sendMessage });
+        } else {
+          console.log("user not found");
+        }
+        const activeStatus: boolean =
+          activeUser[userId]?.activeChatId == chatId ? true : false;
+        console.log({ senderId, userId, sendMessage, activeStatus });
+        updateUserMessage(senderId, userId, sendMessage, activeStatus);
       }
     });
     socket.on(
       "newMessage-existing",
-      ({ userList,senderId, chatId, data, sendMessage }) => {
+      ({ userList, senderId, chatId, data, sendMessage }) => {
         console.log(userList, chatId, data, sendMessage);
-        addMessage("existing", chatId, data);
+        addMessage("existing", chatId, data, sendMessage);
         for (const userId of userList) {
           if (userId in activeUser) {
             const socketId = activeUser[userId].socketId;
@@ -58,10 +74,18 @@ export default function initializeSocket(io: Server) {
               chatId,
               sendMessage,
             );
-            io.to(socketId).emit("newMessage", {chatId,senderId,message: sendMessage});
-          }else{
-            console.log("user not found")
+            io.to(socketId).emit("newMessage", {
+              chatId,
+              senderId,
+              message: sendMessage,
+            });
+          } else {
+            console.log("user not found");
           }
+          const activeStatus: boolean =
+            activeUser[userId]?.activeChatId == chatId ? true : false;
+          console.log({ senderId, userId, sendMessage, activeStatus });
+          updateUserMessage(senderId, userId, sendMessage, activeStatus);
         }
       },
     );
