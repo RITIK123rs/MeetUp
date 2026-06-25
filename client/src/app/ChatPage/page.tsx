@@ -20,6 +20,10 @@ import {
   updateChatList,
   updateUnReadMessage,
   updateActiveChat,
+  setOnlineUsersList,
+  setUserOnline,
+  setUserOffline,
+  addNewUser,
 } from "@/redux/userSlice";
 import { socket } from "@/lib/socket";
 
@@ -32,18 +36,33 @@ interface Chats {
   chatId: string;
   unreadCount: number;
   lastMessageTime: Date;
+  onlineStatus?: boolean;
+}
+
+interface ActiveChatUser {
+  id: string | null;
+  name: string | null;
+  picture: string | null;
 }
 
 export default function ChatPage() {
   const [activeChat, setActiveChat] = useState<null | any>(null);
+  const [activeChatId, setActiveChatId] = useState<string>("");
+  const [activeChatStatus, setActiveChatStatus] = useState<boolean | undefined>(
+    false,
+  );
   const [emojiActive, setEmojiActive] = useState<boolean>(false);
   const [sendMessage, setSendMessage] = useState<string>("");
   const [userList, setUserList] = useState<string[]>([]);
-  const [activeChatId, setActiveChatId] = useState<string>("");
   const bottomRef = useRef<HTMLSpanElement | null>(null);
   const Dispatch = useDispatch();
   const activeChatIdRef = useRef(activeChatId);
   const activeChatRef = useRef(activeChat);
+  const [activeChatUser, setActiveChatUser] = useState<ActiveChatUser>({
+    id: null,
+    name: null,
+    picture: null,
+  });
 
   const personChatList: Chats[] = useSelector(
     (state: RootState) => state.user.chats,
@@ -61,8 +80,34 @@ export default function ChatPage() {
   }, [activeChat]);
 
   useEffect(() => {
+    socket.emit("onlineUsers", (users: string[]) => {
+      console.log("online user Active :- ", users);
+      Dispatch(setOnlineUsersList(users));
+    });
+    socket.on("userOnline", (userId: string) => {
+      console.log("online user :- ", userId);
+      if (userId == activeChatId) setActiveChatStatus(false);
+      Dispatch(setUserOnline(userId));
+    });
+    socket.on("userOffline", (userId: string) => {
+      console.log("offline user :- ", userId);
+      if (userId == activeChatId) setActiveChatStatus(false);
+      Dispatch(setUserOffline(userId));
+    });
     socket.on("newMessage", handleNewMessage);
-    return () => socket.off("newMessage", handleNewMessage);
+
+    socket.on("newContact", (data) => {
+      console.log("newContact :- ", data);
+      Dispatch(addNewUser(data));
+    });
+
+    return () => {
+      socket.off("newMessage", handleNewMessage);
+      socket.off("onlineUsers");
+      socket.off("userOnline");
+      socket.off("userOffline");
+      socket.off("newContact");
+    };
   }, []);
 
   useEffect(() => {
@@ -142,7 +187,7 @@ export default function ChatPage() {
 
   async function selectedChat(chatId: string, unreadCount: number) {
     setActiveChatId(chatId);
-    await fetch(`http://localhost:3000/api/chat/${chatId}`)
+    await fetch(`/api/chat/${chatId}`)
       .then((res) => res.json())
       .then((data) => {
         console.log(data);
@@ -158,7 +203,7 @@ export default function ChatPage() {
       .catch((err) => console.log(err));
 
     if (unreadCount != 0) {
-      await fetch(`http://localhost:3000/api/chat/${chatId}`, {
+      await fetch(`/api/chat/${chatId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -264,8 +309,8 @@ export default function ChatPage() {
     console.log(activeChat);
     Dispatch(
       updateActiveChat({
-        message:sendMessage,
-        chatId:activeChatId,
+        message: sendMessage,
+        chatId: activeChatId,
       }),
     );
     if (messageType == "text") setSendMessage("");
@@ -302,10 +347,16 @@ export default function ChatPage() {
                 preview={data.preview}
                 lastMessageAt={data.lastMessageTime}
                 unreadCount={data.unreadCount}
-                online={true}
+                online={data?.onlineStatus}
                 onClick={() => {
                   selectedChat(data.chatId, data.unreadCount);
                   setActiveChatId(data.chatId);
+                  setActiveChatStatus(data?.onlineStatus);
+                  setActiveChatUser({
+                    id: data.UserId[0],
+                    name: data.name[0],
+                    picture: data.picture,
+                  });
                   console.log({
                     userId,
                     sendId: data.UserId[0],
@@ -330,18 +381,16 @@ export default function ChatPage() {
               <span
                 className="w-[60px] h-[60px] rounded-full bg-cover bg-center"
                 style={{
-                  backgroundImage: `url(/userPic.jpg)`,
+                  backgroundImage: `url(${activeChatUser.picture})`,
                 }}
               />
               <div className="ms-3 flex flex-col gap-0.5">
-                <span className="chat-name">{activeChat.users[0].name}</span>
-                <span className="chat-username">
-                  {activeChat.users[0].userId}
-                </span>
+                <span className="chat-name">{activeChatUser.name}</span>
+                <span className="chat-username">{activeChatUser.id}</span>
                 <span
-                  className={`chat-status ${activeChat.online ? "online" : "offline"}`}
+                  className={`chat-status ${activeChatStatus ? "online" : "offline"}`}
                 >
-                  {true ? "Online" : "Offline"}
+                  {activeChatStatus ? "Online" : "Offline"}
                 </span>
               </div>
               <button className="menu-btn ms-auto">
@@ -350,7 +399,7 @@ export default function ChatPage() {
             </header>
 
             <div className="messageBoxScreen overflow-y-auto px-4 py-4 flex flex-col">
-              {activeChat.messageGroups.map((data, index) => {
+              {activeChat.messageGroups.map((data, index: number) => {
                 return (
                   <span key={index}>
                     <>

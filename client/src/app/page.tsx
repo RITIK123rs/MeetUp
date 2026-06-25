@@ -9,7 +9,7 @@ import { useGoogleLogin } from "@react-oauth/google";
 import { useRouter } from "next/navigation";
 import { setUser } from "@/redux/userSlice";
 import { useSelector, useDispatch } from "react-redux";
-
+import axios from "axios";
 import "../style/loginPage.css";
 import { useState, useEffect } from "react";
 import { socket } from "@/lib/socket";
@@ -68,10 +68,11 @@ export default function LoginPage() {
 
   async function loginAction(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const response = await fetch(
-      `http://localhost:3000/api/auth/login?email=${loginData.email}&password=${loginData.password}`,
+    const response = await axios.get(
+      `/api/auth/login?email=${loginData.email}&password=${loginData.password}`,
     );
-    const userData = await response.json();
+
+    const userData: UserData = response.data;
 
     if (userData.success) {
       localStorage.setItem("user", JSON.stringify(userData));
@@ -92,18 +93,12 @@ export default function LoginPage() {
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
-      const response = await fetch("http://localhost:3000/api/auth/google", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const {data: userData} = await axios.post<UserData>(
+        "/api/auth/google",
+        {
           token: tokenResponse.access_token,
-        }),
-      });
-
-      const userData: UserData = await response.json();
-      console.log(userData);
+        },
+      );
 
       if (userData.success) {
         localStorage.setItem("user", JSON.stringify(userData));

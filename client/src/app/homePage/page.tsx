@@ -15,6 +15,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/redux/store";
 import { useRouter } from "next/navigation";
 import { socket } from "@/lib/socket";
+import {addNewUser} from "@/redux/userSlice";
 
 const menuBtnBase: string =
   "w-12 h-12 flex rounded-xl items-center justify-center text-text-secondary transition-colors duration-150 hover:bg-[var(--bg-hover)] hover:text-text-primary";
@@ -33,6 +34,7 @@ function HomePageMain() {
 }
 
 export default function homePage() {
+  const Dispatch = useDispatch()
   const router = useRouter();
   const [mainContent, setMainContent] = useState<string>("homePage");
   const userPicture: string = useSelector(
@@ -43,31 +45,30 @@ export default function homePage() {
   )!;
 
   useEffect(() => {
-  const stored = localStorage.getItem("user");
-  if (!stored) {
-    router.push("/");
-    return;
-  }
+    const stored = localStorage.getItem("user");
+    if (!stored) {
+      router.push("/");
+      return;
+    }
 
-  if (socket.connected ) {
-    console.log("Socket is already connected");
-    return;
-  }
+    if (socket.connected) {
+      console.log("Socket is already connected");
+      return;
+    }
 
-  const userData = JSON.parse(stored);
+    const userData = JSON.parse(stored);
 
-  socket.auth = {
-    id: userData.id,
-    name: userData.name,
-    email: userData.email,
-  };
-  socket.connect();
+    socket.auth = {
+      id: userData.id,
+      name: userData.name,
+      email: userData.email,
+    };
+    socket.connect();
 
-  return()=>{
-    socket.disconnect();
-  }
-
-}, []);
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   return (
     <div className="bg-bg-base w-screen h-screen flex">

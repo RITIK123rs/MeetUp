@@ -25,12 +25,16 @@ export default function initializeSocket(io: Server) {
       name: name as string,
       email: email as string,
     };
+
+    socket.data.userId = id;
+
     next();
   });
 
   io.on("connection", (socket) => {
     console.log("User Connected : ", socket.id);
-    console.log(activeUser);
+    console.log(activeUser, "user Id :- ", socket.data.userId);
+    socket.broadcast.emit("userOnline", socket.data.userId);
 
     socket.on("activeChat", ({ userId, chatId }) => {
       activeUser[userId].activeChatId = chatId;
@@ -90,11 +94,21 @@ export default function initializeSocket(io: Server) {
       },
     );
 
+    socket.on("onlineUsers", (callback) => {
+      callback(Object.keys(activeUser));
+    });
+
+    socket.on("newContactAdd",({ userId, data })=>{
+      console.log({userId, data},userId.socketId);
+      io.to(activeUser[userId]?.socketId).emit("newContact",data);
+    })
+
     socket.on("disconnect", () => {
       console.log("user Disconnected : ", socket.id);
       const userId: string = Object.keys(activeUser).find(
         (id) => activeUser[id].socketId == socket.id,
       ) as string;
+      socket.broadcast.emit("userOffline", socket.data.userId);
       delete activeUser[userId];
     });
   });

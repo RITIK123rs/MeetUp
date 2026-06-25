@@ -1,4 +1,4 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, current } from "@reduxjs/toolkit";
 
 interface Contacts {
   name: string;
@@ -14,10 +14,11 @@ interface Chats {
   chatId: string;
   unreadCount: number;
   lastMessageTime: Date;
+  onlineStatus?: boolean;
 }
 
 interface UserState {
-  id: string | null ;
+  id: string | null;
   name: string | null;
   email: string | null;
   picture: string | null;
@@ -45,33 +46,88 @@ const userSlice = createSlice({
   initialState,
   reducers: {
     setUser: (state, action) => {
-      state.id           = action.payload.id;
-      state.name         = action.payload.name;
-      state.email        = action.payload.email;
-      state.picture      = action.payload.picture;
-      state.contactNo    = action.payload.contactNo;
-      state.groupNo      = action.payload.groupNo;
-      state.videoChatNo  = action.payload.videoChatNo;
-      state.contacts     = action.payload.contacts;
-      state.chats        = action.payload.chats;
+      state.id = action.payload.id;
+      state.name = action.payload.name;
+      state.email = action.payload.email;
+      state.picture = action.payload.picture;
+      state.contactNo = action.payload.contactNo;
+      state.groupNo = action.payload.groupNo;
+      state.videoChatNo = action.payload.videoChatNo;
+      state.contacts = action.payload.contacts;
+      state.chats = action.payload.chats;
     },
-    updateChatList: (state, action) =>{
-      state.chats  = action.payload.chats;
+    updateChatList: (state, action) => {
+      state.chats = action.payload.chats;
     },
-    updateUnReadMessage: (state,action)=>{
-      const index = state.chats.findIndex(chat => chat.chatId === action.payload.chatId);
-      state.chats[index].preview=action.payload.message;
-      state.chats[index].unreadCount+=1;
-      state.chats[index].lastMessageTime=new Date();
+    updateUnReadMessage: (state, action) => {
+      const index = state.chats.findIndex(
+        (chat) => chat.chatId === action.payload.chatId,
+      );
+      state.chats[index].preview = action.payload.message;
+      state.chats[index].unreadCount += 1;
+      state.chats[index].lastMessageTime = new Date();
     },
-    updateActiveChat: (state,action)=>{
-      const index = state.chats.findIndex(chat => chat.chatId === action.payload.chatId);
-      state.chats[index].preview=action.payload.message;
-      state.chats[index].lastMessageTime=new Date();
+    updateActiveChat: (state, action) => {
+      const index = state.chats.findIndex(
+        (chat) => chat.chatId === action.payload.chatId,
+      );
+      state.chats[index].preview = action.payload.message;
+      state.chats[index].lastMessageTime = new Date();
+    },
+    setOnlineUsersList: (state, action) => {
+      const onlineUserList = action.payload;
+      for (let i = 0; i < state.chats.length; i++) {
+        state.chats[i].onlineStatus = onlineUserList.includes(
+          state.chats[i].UserId[0],
+        );
+      }
+    },
+    setUserOnline: (state, action) => {
+      const index = state.chats.findIndex(
+        (chat) => chat.UserId == action.payload,
+      );
+      state.chats[index].onlineStatus = true;
+      console.log("user online : ", action.payload);
+    },
+    setUserOffline: (state, action) => {
+      const index = state.chats.findIndex(
+        (chat) => chat.UserId == action.payload,
+      );
+      state.chats[index].onlineStatus = false;
+      console.log("user offline : ", action.payload);
+    },
+    addNewUser: (state, action) => {
+      const { addContact, addChats } = action.payload;
+
+      state.contactNo += 1;
+      state.contacts.push(addContact);
+
+      state.chats.push({
+        name: [addChats.name],
+        UserId: [addChats.UserId],
+        picture: addChats.picture,
+        preview: addChats.preview ?? "New Contact",
+        isGroup: addChats.isGroup,
+        chatId: addChats.chatId,
+        unreadCount: addChats.unreadCount,
+        lastMessageTime: new Date(0),
+        onlineStatus: false,
+      });
+      console.log("Redux state Data :- ",current(state.chats),current(state.contacts));
     },
     clearUser: () => initialState,
   },
 });
 
-export const { setUser,updateChatList,updateUnReadMessage,updateActiveChat,clearUser } = userSlice.actions;
+export const {
+  setUser,
+  updateChatList,
+  updateUnReadMessage,
+  updateActiveChat,
+  setOnlineUsersList,
+  setUserOnline,
+  setUserOffline,
+  addNewUser,
+  clearUser,
+} = userSlice.actions;
 export default userSlice.reducer;

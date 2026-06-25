@@ -44,6 +44,8 @@ export async function updateUserMessage(senderId:string,userId:string,message:st
     $set: { "chats.$.preview": message, "chats.$.lastMessageTime":new Date(),}
   },{new:true})
 
-  console.log(senderData.chats,userData.chats);
+  console.log({senderData,userData});
+  console.log("sender Data :- ",senderData.chats);
+  console.log("User Data :- ",userData.chats);
 
 }
