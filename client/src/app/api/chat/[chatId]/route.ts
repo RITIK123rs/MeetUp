@@ -13,8 +13,26 @@ export async function GET(
   try {
     const { chatId } = await params;
     await connectDB();
-    const searchChat = await chat.findById(chatId);
-    // console.log(searchChat);
+    const searchChat = await chat.findById(chatId).lean();
+    console.log(searchChat);
+
+    if (!searchChat) {
+      return NextResponse.json({
+        success: false,
+        message: "Chat not found",
+      });
+    }
+
+    for (const [index, data] of searchChat.users.entries()) {
+      const chatUser = await user
+        .findById(data.userId)
+        .select("picture")
+        .lean();
+
+      searchChat.users[index].picture = chatUser?.picture;
+    }
+
+    console.log("search chat :- ", searchChat);
 
     return NextResponse.json({
       success: true,
@@ -64,7 +82,7 @@ export async function PATCH(
       updatedData.chats[i]["picture"] = chatUser.picture;
     }
 
-    // console.log(updatedData.chats);
+    console.log(updatedData.chats);
     return NextResponse.json({
       success: true,
       chats: updatedData.chats,

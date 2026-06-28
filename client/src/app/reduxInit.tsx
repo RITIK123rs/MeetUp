@@ -10,7 +10,7 @@ export default function ReduxInit({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
 
-    console.log(savedUser);
+    // console.log(savedUser);
 
     if (savedUser) {
       dispatch(setUser(JSON.parse(savedUser)));

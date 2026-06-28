@@ -12,6 +12,11 @@ const chatSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  isGroup:{
+    type: Boolean,
+    default: false,
+  },
+  groupName:String,
   lastMessage: String,
   messageGroups: [
     {

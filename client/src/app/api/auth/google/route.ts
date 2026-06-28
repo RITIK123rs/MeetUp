@@ -1,11 +1,13 @@
 import { NextResponse, NextRequest } from "next/server";
 import user from "@/models/user";
+import mongoose from "mongoose";
 import connectDB from "@/lib/dbConnection";
 import { ObjectId } from "mongodb";
 
 interface Contacts {
   name: string;
   userId: ObjectId;
+  picture: string;
 }
 
 interface Chats {
@@ -97,14 +99,28 @@ export async function POST(req: NextRequest) {
 
       for (let i = 0; i < result.chats.length; i++) {
         console.log(result.chats[i]);
-        const chatUser = await user
-          .findById(result.chats[i].UserId)
-          .select(" name email picture ")
-          .lean();
+        let chatUser;
+        result.chats[i]["name"] = [];
+        result.chats[i]["email"] = [];
+        for (let j = 0; j < result.chats[i].UserId.length; j++) {
+          chatUser = await mongoose.models.user
+            .findById(result.chats[i].UserId[j])
+            .select(" name email picture ")
+            .lean();
+          result.chats[i]["name"].push(chatUser.name);
+          result.chats[i]["email"].push(chatUser.email);
+          result.chats[i]["picture"] = chatUser.picture;
+        }
         console.log(chatUser);
-        result.chats[i]["name"] = [chatUser.name];
-        result.chats[i]["email"] = [chatUser.email];
-        result.chats[i]["picture"] = chatUser.picture;
+        console.log(result.chats[i]);
+      }
+
+      for (let i = 0; i < result.contacts.length; i++) {
+        let contact = await mongoose.models.user
+          .findById(result.contacts[i].userId)
+          .select("picture")
+          .lean();
+        result.contacts[i]["picture"] = contact.picture;
       }
     }
 

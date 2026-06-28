@@ -4,7 +4,7 @@ import { addMessage, updateUserMessage } from "./handlers/dbMessage";
 interface ActiveUser {
   [userId: string]: {
     socketId: string;
-    activeChatId?: string;
+    activeChatId?: string | undefined;
     name: string | undefined;
     email: string | undefined;
   };
@@ -37,6 +37,10 @@ export default function initializeSocket(io: Server) {
     socket.broadcast.emit("userOnline", socket.data.userId);
 
     socket.on("activeChat", ({ userId, chatId }) => {
+      if (!activeUser[userId]) {
+        console.log("User not found:", userId);
+        return;
+      }
       activeUser[userId].activeChatId = chatId;
     });
 
@@ -98,10 +102,23 @@ export default function initializeSocket(io: Server) {
       callback(Object.keys(activeUser));
     });
 
-    socket.on("newContactAdd",({ userId, data })=>{
-      console.log({userId, data},userId.socketId);
-      io.to(activeUser[userId]?.socketId).emit("newContact",data);
-    })
+    socket.on("newContactAdd", ({ userId, data }) => {
+      console.log({ userId, data }, userId.socketId);
+      io.to(activeUser[userId]?.socketId).emit("newContact", data);
+    });
+
+    socket.on("NewGroup", (chats) => {
+      console.log("socket (NewGroup) :- ", chats);
+      for (var userId of Object.keys(chats)) {
+        const user = activeUser[userId];
+        if (!user) continue;
+        console.log(activeUser);
+        console.log("socket userId :- ", user.socketId);
+        io.to(user.socketId).emit("newGroupAdd", chats[userId]);
+        io.to(user.socketId).emit("hello");
+        socket.emit("hello");
+      }
+    });
 
     socket.on("disconnect", () => {
       console.log("user Disconnected : ", socket.id);

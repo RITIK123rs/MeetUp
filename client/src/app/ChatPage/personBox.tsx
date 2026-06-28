@@ -5,6 +5,7 @@ type PersonBoxProps = {
   name: string;
   picture: string;
   preview: string;
+  isGroup: boolean;
   lastMessageAt: Date;
   unreadCount?: number;
   online?: boolean;
@@ -16,6 +17,7 @@ export default function PersonBox({
   name,
   picture,
   preview,
+  isGroup,
   lastMessageAt,
   unreadCount = 0,
   online = false,
@@ -34,7 +36,7 @@ export default function PersonBox({
         <span className="w-[100%] h-[100%] rounded-full bg-cover bg-center" style={{
               backgroundImage: `url(${picture})`,
             }} />
-        {online && (
+        { !isGroup && online && (
           <span className="online-dot absolute w-2.5 h-2.5 bottom-0 right-0 rounded-full bg-green-500" />
         )}
       </div>

@@ -8,7 +8,15 @@ const chatSchema = new mongoose.Schema({
       userId: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
     },
   ],
-  lastMessageAt: Date,
+  lastMessageAt: {
+    type: Date,
+    default: Date.now,
+  },
+  isGroup:{
+    type: Boolean,
+    default: false,
+  },
+  groupName:String,
   lastMessage: String,
   messageGroups: [
     {
@@ -21,7 +29,7 @@ const chatSchema = new mongoose.Schema({
           sender: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
           textMessage: Boolean,
           text: String,
-          createdAt: {             
+          createdAt: {
             type: Date,
             default: Date.now,
           },
@@ -31,6 +39,6 @@ const chatSchema = new mongoose.Schema({
   ],
 });
 
-const chat =mongoose.models.chat || mongoose.model("chat", chatSchema);
+const chat = mongoose.models.chat || mongoose.model("chat", chatSchema);
 
 export default chat;

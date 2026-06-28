@@ -24,14 +24,17 @@ import {
   setUserOnline,
   setUserOffline,
   addNewUser,
+  addNewGroup,
 } from "@/redux/userSlice";
 import { socket } from "@/lib/socket";
+import GroupPanel from "./groupPanel";
 
 interface Chats {
   name: string[];
   UserId: string[];
   picture: string;
   preview: string;
+  groupName?: string;
   isGroup: boolean;
   chatId: string;
   unreadCount: number;
@@ -40,9 +43,11 @@ interface Chats {
 }
 
 interface ActiveChatUser {
-  id: string | null;
-  name: string | null;
-  picture: string | null;
+  id?: string;
+  name?: string;
+  groupName?: string;
+  names?: string[];
+  picture?: string;
 }
 
 export default function ChatPage() {
@@ -56,14 +61,11 @@ export default function ChatPage() {
   const [userList, setUserList] = useState<string[]>([]);
   const bottomRef = useRef<HTMLSpanElement | null>(null);
   const Dispatch = useDispatch();
+  const [isGroupChat, setIsGroupChat] = useState<boolean>(false);
   const activeChatIdRef = useRef(activeChatId);
   const activeChatRef = useRef(activeChat);
-  const [activeChatUser, setActiveChatUser] = useState<ActiveChatUser>({
-    id: null,
-    name: null,
-    picture: null,
-  });
-
+  const [groupPanelStatus, setGroupPanelStatus] = useState<boolean>(false);
+  const [activeChatUser, setActiveChatUser] = useState<ActiveChatUser>({});
   const personChatList: Chats[] = useSelector(
     (state: RootState) => state.user.chats,
   );
@@ -94,11 +96,21 @@ export default function ChatPage() {
       if (userId == activeChatId) setActiveChatStatus(false);
       Dispatch(setUserOffline(userId));
     });
+
     socket.on("newMessage", handleNewMessage);
 
     socket.on("newContact", (data) => {
       console.log("newContact :- ", data);
       Dispatch(addNewUser(data));
+    });
+
+    socket.on("newGroupAdd", (chat) => {
+      console.log("Received NewGroup:", chat);
+      Dispatch(addNewGroup(chat));
+    });
+
+    socket.on("hello", () => {
+      console.log("hello");
     });
 
     return () => {
@@ -107,6 +119,7 @@ export default function ChatPage() {
       socket.off("userOnline");
       socket.off("userOffline");
       socket.off("newContact");
+      socket.off("newGroupAdd");
     };
   }, []);
 
@@ -137,6 +150,8 @@ export default function ChatPage() {
       return;
     }
 
+    console.log("handleNewMessage :-", { chatId, senderId, message });
+
     if (!activeChatRef.current) return;
 
     const current = activeChatRef.current;
@@ -157,6 +172,7 @@ export default function ChatPage() {
           },
         ],
       };
+      console.log({ data });
       setActiveChat({
         ...current,
         messageGroups: [...current.messageGroups, data],
@@ -172,6 +188,7 @@ export default function ChatPage() {
         createdAt: new Date(),
       };
       const lastChatIndex = current.messageGroups.length - 1;
+      console.log({ data });
       setActiveChat({
         ...current,
         messageGroups: current.messageGroups.map((group, index) =>
@@ -198,6 +215,7 @@ export default function ChatPage() {
         console.log("filter");
         setUserList(filterData);
         console.log(filterData);
+        console.log("chat Data :-", data.data);
         setActiveChat(data.data);
       })
       .catch((err) => console.log(err));
@@ -317,11 +335,14 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="chatPage flex h-full">
+    <div className="chatPage flex h-full relative">
       <aside className="chatSidebar w-[320px] shrink-0 h-full px-3 py-4 flex flex-col">
         <div className="chatSidebar-header flex items-center justify-between px-1">
           <h1>Messages</h1>
-          <button className="groupCreate flex items-center">
+          <button
+            className="groupCreate flex items-center"
+            onClick={() => setGroupPanelStatus(true)}
+          >
             <FaPlus className="text-xs" /> Group
           </button>
         </div>
@@ -342,26 +363,46 @@ export default function ChatPage() {
             {personChatList.map((data, index) => (
               <PersonBox
                 key={index}
-                name={data.name[0]}
-                picture={data.picture}
+                name={data.isGroup ? data.groupName : data.name[0]}
+                picture={data.isGroup ? "/groupPic.jpg" : data.picture}
                 preview={data.preview}
+                isGroup={data.isGroup}
                 lastMessageAt={data.lastMessageTime}
                 unreadCount={data.unreadCount}
                 online={data?.onlineStatus}
                 onClick={() => {
                   selectedChat(data.chatId, data.unreadCount);
                   setActiveChatId(data.chatId);
-                  setActiveChatStatus(data?.onlineStatus);
-                  setActiveChatUser({
-                    id: data.UserId[0],
-                    name: data.name[0],
-                    picture: data.picture,
-                  });
-                  console.log({
-                    userId,
-                    sendId: data.UserId[0],
-                    chatId: data.chatId,
-                  });
+                  console.log("user set Data :- ");
+                  console.log(data);
+                  if (!data.isGroup) {
+                    setIsGroupChat(false);
+                    setActiveChatStatus(data?.onlineStatus);
+                    setActiveChatUser({
+                      id: data.UserId[0],
+                      name: data.name[0],
+                      picture: data.picture,
+                    });
+                    console.log("active Chat (!isGroup) :- ", {
+                      name: data.name[0],
+                      userId,
+                      sendId: data.UserId[0],
+                      chatId: data.chatId,
+                    });
+                  } else {
+                    setIsGroupChat(true);
+                    setActiveChatUser({
+                      groupName: data.groupName,
+                      names: data.name,
+                      picture: "/groupPic.jpg",
+                    });
+                    console.log("active Chat (isGroup) :- ", {
+                      groupName: data.groupName,
+                      names: data.name,
+                      picture: "/groupPic.jpg",
+                    });
+                  }
+
                   socket.emit("activeChat", { userId, chatId: data.chatId });
                 }}
               />
@@ -385,12 +426,18 @@ export default function ChatPage() {
                 }}
               />
               <div className="ms-3 flex flex-col gap-0.5">
-                <span className="chat-name">{activeChatUser.name}</span>
-                <span className="chat-username">{activeChatUser.id}</span>
+                <span className="chat-name">
+                  {isGroupChat ? activeChatUser.groupName : activeChatUser.name}
+                </span>
+                <span className="chat-username">
+                  {isGroupChat
+                    ? activeChatUser.names?.join(", ")
+                    : activeChatUser.id}
+                </span>
                 <span
                   className={`chat-status ${activeChatStatus ? "online" : "offline"}`}
                 >
-                  {activeChatStatus ? "Online" : "Offline"}
+                  {isGroupChat ? null : activeChatStatus ? "Online" : "Offline"}
                 </span>
               </div>
               <button className="menu-btn ms-auto">
@@ -404,7 +451,7 @@ export default function ChatPage() {
                   <span key={index}>
                     <>
                       <MessageDate date={data.date} />
-                      <Message chatData={data.chats} />
+                      <Message chatData={data.chats} users={activeChat.users} />
                     </>
                     <span className="scrollBottom" ref={bottomRef} />
                   </span>
@@ -466,6 +513,9 @@ export default function ChatPage() {
           </>
         )}
       </section>
+      {groupPanelStatus && (
+        <GroupPanel setGroupPanelStatus={setGroupPanelStatus} />
+      )}
     </div>
   );
 }

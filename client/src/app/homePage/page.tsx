@@ -15,7 +15,8 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/redux/store";
 import { useRouter } from "next/navigation";
 import { socket } from "@/lib/socket";
-import {addNewUser} from "@/redux/userSlice";
+import {addNewUser, addNewGroup} from "@/redux/userSlice";
+
 
 const menuBtnBase: string =
   "w-12 h-12 flex rounded-xl items-center justify-center text-text-secondary transition-colors duration-150 hover:bg-[var(--bg-hover)] hover:text-text-primary";
@@ -64,9 +65,13 @@ export default function homePage() {
       email: userData.email,
     };
     socket.connect();
+    // socket.on("NewGroupAdd", (chat)=>{
+    //   Dispatch(addNewGroup(chat));
+    // })
 
     return () => {
       socket.disconnect();
+      // socket.off("NewGroupAdd");
     };
   }, []);
 

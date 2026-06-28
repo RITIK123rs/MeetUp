@@ -32,20 +32,22 @@ export async function addMessage(
 export async function updateUserMessage(senderId:string,userId:string,message:string,activeUser:boolean){
   let userData
   if(!activeUser){
-    userData=await user.findOneAndUpdate({_id:userId,"chats.UserId.0": senderId },{
+    userData=await user.findOneAndUpdate({_id:userId,"chats.UserId": senderId },{
     $set: { "chats.$.preview": message, "chats.$.lastMessageTime":new Date() }, $inc: { "chats.$.unreadCount":1 } },{new:true});
   }
   else{
-    userData=await user.findOneAndUpdate({_id:userId,"chats.UserId.0": senderId },{
+    userData=await user.findOneAndUpdate({_id:userId,"chats.UserId": senderId },{
     $set: { "chats.$.preview": message, "chats.$.lastMessageTime":new Date()}},{new:true});
   }
   
-  let senderData=await user.findOneAndUpdate({_id:senderId,"chats.UserId.0":userId },{
+  let senderData=await user.findOneAndUpdate({_id:senderId,"chats.UserId":userId },{
     $set: { "chats.$.preview": message, "chats.$.lastMessageTime":new Date(),}
   },{new:true})
 
   console.log({senderData,userData});
   console.log("sender Data :- ",senderData.chats);
   console.log("User Data :- ",userData.chats);
+
+  
 
 }

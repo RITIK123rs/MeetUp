@@ -7,6 +7,7 @@ import { ObjectId } from "mongodb";
 interface Contacts {
   name: string;
   userId: ObjectId;
+  picture: string;
 }
 
 interface Chats {
@@ -57,23 +58,34 @@ export async function GET(req: NextRequest) {
       contactNo: searchUser.contactNo,
       groupNo: searchUser.groupNo,
       videoChatNo: searchUser.videoChatNo,
-      contacts: searchUser.contacts as Contacts[],
+      contacts: searchUser.toObject().contacts as Contacts[],
       chats: searchUser.toObject().chats as Chats[],
     };
 
     for (let i = 0; i < result.chats.length; i++) {
       console.log(result.chats[i]);
-      const chatUser = await mongoose.models.user
-        .findById(result.chats[i].UserId[0])
-        .select(" name email picture ").lean();
-
+      let chatUser;
+      result.chats[i]["name"] = [];
+      result.chats[i]["email"] = [];
+      for (let j = 0; j < result.chats[i].UserId.length; j++) {
+        chatUser = await mongoose.models.user
+          .findById(result.chats[i].UserId[j])
+          .select(" name email picture ")
+          .lean();
+        result.chats[i]["name"].push(chatUser.name);
+        result.chats[i]["email"].push(chatUser.email);
+        result.chats[i]["picture"] = chatUser.picture;
+      }
       console.log(chatUser);
-
-      result.chats[i]["name"]=[chatUser.name];
-      result.chats[i]["email"]=[chatUser.email];
-      result.chats[i]["picture"] = chatUser.picture;
-      
       console.log(result.chats[i]);
+    }
+
+    for (let i = 0; i < result.contacts.length; i++) {
+      const contact = await mongoose.models.user
+        .findById(result.contacts[i].userId)
+        .select("picture")
+        .lean();
+      result.contacts[i]["picture"] = contact?.picture;
     }
 
     console.log(result);
