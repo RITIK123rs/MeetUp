@@ -40,13 +40,13 @@ export async function GET(req: NextRequest) {
   const email = searchParam.get("email");
   const password = searchParam.get("password");
 
-  console.log(typeof email, typeof password);
+  // console.log(typeof email, typeof password);
 
   await connectDB();
 
   const searchUser = await user.findOne({ email: email });
 
-  console.log(searchUser);
+  // console.log(searchUser);
 
   if (searchUser && searchUser.password == password) {
     let result: UserResponse = {
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
     };
 
     for (let i = 0; i < result.chats.length; i++) {
-      console.log(result.chats[i]);
+      // console.log(result.chats[i]);
       let chatUser;
       result.chats[i]["name"] = [];
       result.chats[i]["email"] = [];
@@ -76,8 +76,8 @@ export async function GET(req: NextRequest) {
         result.chats[i]["email"].push(chatUser.email);
         result.chats[i]["picture"] = chatUser.picture;
       }
-      console.log(chatUser);
-      console.log(result.chats[i]);
+      // console.log(chatUser);
+      // console.log(result.chats[i]);
     }
 
     for (let i = 0; i < result.contacts.length; i++) {
@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
       result.contacts[i]["picture"] = contact?.picture;
     }
 
-    console.log(result);
+    // console.log(result);
 
     return NextResponse.json(result);
   } else {

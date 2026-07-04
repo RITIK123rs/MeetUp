@@ -25,29 +25,37 @@ export async function addMessage(
       { new: true },
     );
   }
-//   console.log(updatedData);
+  // console.log({updatedData});
 }
 
 
-export async function updateUserMessage(senderId:string,userId:string,message:string,activeUser:boolean){
+export async function updateUserMessage(senderId:string,userId:string,message:string,activeUser:boolean,chatId:string){
   let userData
   if(!activeUser){
-    userData=await user.findOneAndUpdate({_id:userId,"chats.UserId": senderId },{
+    userData=await user.findOneAndUpdate({_id:userId, chats: { $elemMatch: { UserId: { $in: [senderId] }, chatId: chatId } } },{
     $set: { "chats.$.preview": message, "chats.$.lastMessageTime":new Date() }, $inc: { "chats.$.unreadCount":1 } },{new:true});
   }
   else{
-    userData=await user.findOneAndUpdate({_id:userId,"chats.UserId": senderId },{
+    userData=await user.findOneAndUpdate({_id:userId, chats: { $elemMatch: { UserId: { $in: [senderId] }, chatId: chatId } }},{
     $set: { "chats.$.preview": message, "chats.$.lastMessageTime":new Date()}},{new:true});
   }
   
-  let senderData=await user.findOneAndUpdate({_id:senderId,"chats.UserId":userId },{
+  let senderData=await user.findOneAndUpdate({_id:senderId, chats: { $elemMatch: { UserId: { $in: [userId] }, chatId: chatId } } },{
     $set: { "chats.$.preview": message, "chats.$.lastMessageTime":new Date(),}
   },{new:true})
 
-  console.log({senderData,userData});
-  console.log("sender Data :- ",senderData.chats);
-  console.log("User Data :- ",userData.chats);
 
+  // console.log({senderData,userData});
+  // if (!userData) {
+  //   console.warn(`updateUserMessage: no chat found for user ${userId} with sender ${senderId}`);
+  // }else{
+  //   console.log("User Data :- ",userData.chats);
+  // }
+  // if (!senderData) {
+  //   console.warn(`updateUserMessage: no chat found for sender ${senderId} with user ${userId}`);
+  // }else{
+  //   console.log("sender Data :- ",senderData.chats);
+  // }
   
 
 }

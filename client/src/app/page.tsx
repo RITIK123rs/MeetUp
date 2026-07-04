@@ -77,7 +77,7 @@ export default function LoginPage() {
     if (userData.success) {
       localStorage.setItem("user", JSON.stringify(userData));
       Dispatch(setUser(userData));
-      console.log("login socket.io");
+      // console.log("login socket.io");
       socket.disconnect();
       socket.auth = {
         id: userData.id,
@@ -87,7 +87,7 @@ export default function LoginPage() {
       socket.connect();
       router.push("/homePage");
     } else {
-      console.log("Login Failed");
+      // console.log("Login Failed");
     }
   }
 
@@ -103,7 +103,7 @@ export default function LoginPage() {
       if (userData.success) {
         localStorage.setItem("user", JSON.stringify(userData));
         Dispatch(setUser(userData));
-        console.log("login socket.io");
+        // console.log("login socket.io");
         socket.disconnect();
         socket.auth = {
           id: userData.id,
@@ -113,11 +113,11 @@ export default function LoginPage() {
         socket.connect();
         router.push("/homePage");
       } else {
-        console.log("Google Login Failed");
+        // console.log("Google Login Failed");
       }
     },
     onError: () => {
-      console.log("Google Login Failed");
+      // console.log("Google Login Failed");
     },
   });
 

@@ -49,19 +49,19 @@ export default function GroupPanel({ setGroupPanelStatus }:GroupPanelProps) {
   async function handleCreateGroup() {
     if (selectedUser.length < 3 || groupName.trim().length == 0) return;
     if (!id) return;
-    console.log(selectedUser);
+    // console.log(selectedUser);
     const res = await axios.post("http://localhost:5000/newGroupAdd", {
       groupName: groupName.trim(),
       users: selectedUser,
     });
     if (res.data.success) {
       let updateChat = res.data.chats;
-      console.log(updateChat);
+      // console.log(updateChat);
       Dispatch(addNewGroup(updateChat[id]));
       delete updateChat[id];
       socket.emit("NewGroup", updateChat);
     } else {
-      console.log("Server Error");
+      // console.log("Server Error");
     }
     setGroupName("");
     setSelectedUser([

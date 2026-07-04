@@ -1,0 +1,480 @@
+.videoCallOverlay {
+  background: #0a0c14;
+  color: var(--text-primary);
+  position: relative;
+}
+
+.videoCallHeader {
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.videoCall-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.videoCall-roomId {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  font-family: monospace;
+}
+
+.videoCall-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.videoCall-userCount {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+}
+
+.videoCall-timer {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Body / Stage layouts ---------- */
+
+.videoCallBody {
+  overflow: hidden;
+}
+
+.videoCallStage {
+  display: flex;
+  position: relative;
+}
+
+.videoCallStage-one {
+  align-items: stretch;
+}
+
+.videoCallStage-two {
+  align-items: stretch;
+}
+
+.videoCallStage-grid {
+  align-items: flex-start;
+  overflow-y: auto;
+}
+
+.videoCallStage-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.videoCallStage-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.videoCallStage-grid::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.35);
+  border-radius: 999px;
+}
+
+.videoCallStage-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.55);
+}
+
+.videoCallGrid {
+  width: 100%;
+  align-content: flex-start;
+}
+
+/* Picture-in-picture layout for 2 participants */
+.videoCallPipWrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- Tiles ---------- */
+
+.videoTile {
+  position: relative;
+  border-radius: var(--radius-md, 12px);
+  overflow: hidden;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+}
+
+.videoTile-full {
+  width: 100%;
+  height: 100%;
+}
+
+.videoTile-big {
+  width: 100%;
+  height: 100%;
+}
+
+.videoTile-pip {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 200px;
+  height: 140px;
+  border: 2px solid rgba(124, 58, 237, 0.55);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  z-index: 5;
+}
+
+.videoTile-grid {
+  flex: 1 1 calc(33.333% - 12px);
+  min-width: 220px;
+  aspect-ratio: 4 / 3;
+}
+
+.videoTile-bg {
+  filter: brightness(0.55);
+}
+
+.videoTile-me .videoTile-bg {
+  filter: brightness(0.7);
+}
+
+.videoTile-avatarFallback {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+}
+
+.videoTile-avatarCircle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(124, 58, 237, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.videoTile-pip .videoTile-avatarCircle {
+  width: 40px;
+  height: 40px;
+  font-size: 1rem;
+}
+
+.videoTile-info {
+  background: rgba(0, 0, 0, 0.55);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.videoTile-micDot {
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.videoTile-micDot.mic-off {
+  color: #f87171;
+}
+
+.videoTile-micDot.mic-on {
+  color: #34d399;
+}
+
+/* ---------- Side panel (chat + participants) ---------- */
+
+.videoCallSidePanel {
+  width: 300px;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.videoCallSidePanel-header {
+  padding: 14px 16px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.videoCallSidePanel-close {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.videoCallSidePanel-close:hover {
+  color: var(--text-primary);
+}
+
+.videoCallSidePanel-body {
+  flex: 1;
+  padding: 14px 16px;
+  overflow-y: auto;
+}
+
+.videoCallSidePanel-empty {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+  margin-top: 20px;
+}
+
+/* ---------- Chat messages ---------- */
+
+.videoCallChatMessages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.videoCallChatBubbleRow {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.videoCallChatBubbleRow-me {
+  justify-content: flex-end;
+}
+
+.videoCallChatBubble {
+  max-width: 80%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px 12px 12px 4px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.videoCallChatBubbleRow-me .videoCallChatBubble {
+  background: rgba(124, 58, 237, 0.22);
+  border-color: rgba(124, 58, 237, 0.45);
+  border-radius: 12px 12px 4px 12px;
+}
+
+.videoCallChatBubble-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent-purple-light);
+}
+
+.videoCallChatBubble-text {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.videoCallChatBubble-time {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  align-self: flex-end;
+}
+
+.videoCallChatInputRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.videoCallChatInput {
+  flex: 1;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.videoCallChatInput:focus {
+  border-color: rgba(124, 58, 237, 0.5);
+}
+
+.videoCallChatInput::placeholder {
+  color: var(--text-muted);
+}
+
+.videoCallChatSendBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-purple-light);
+  color: white;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+
+.videoCallChatSendBtn:hover {
+  opacity: 0.85;
+}
+
+/* ---------- Add user + participant list ---------- */
+
+.videoCallAddUserBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 16px 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm, 8px);
+  background: rgba(124, 58, 237, 0.15);
+  color: var(--accent-purple-light);
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.15s ease;
+}
+
+.videoCallAddUserBtn:hover {
+  background: rgba(124, 58, 237, 0.25);
+}
+
+.videoCallParticipantList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.videoCallParticipantRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm, 8px);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+}
+
+.videoCallParticipantRow-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(124, 58, 237, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.videoCallParticipantRow-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.videoCallParticipantRow-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.videoCallParticipantRow-id {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+.videoCallParticipantRow-delete {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.videoCallParticipantRow-delete:hover {
+  color: #f87171;
+  background: rgba(220, 38, 38, 0.12);
+}
+
+/* ---------- Controls ---------- */
+
+.videoCallControls {
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.videoCallControlBtn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.videoCallControlBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.videoCallControlBtn-off {
+  background: rgba(220, 38, 38, 0.15);
+  color: #f87171;
+  border-color: rgba(220, 38, 38, 0.35);
+}
+
+.videoCallControlBtn-off:hover {
+  background: rgba(220, 38, 38, 0.25);
+}
+
+.videoCallControlBtn-active {
+  background: rgba(124, 58, 237, 0.2);
+  color: var(--accent-purple-light);
+  border-color: rgba(124, 58, 237, 0.45);
+}
+
+.videoCallEndBtn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #dc2626;
+  color: white;
+  margin-left: 8px;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+}
+
+.videoCallEndBtn:hover {
+  background: #b91c1c;
+}

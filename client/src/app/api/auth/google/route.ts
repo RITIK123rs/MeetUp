@@ -49,13 +49,13 @@ export async function POST(req: NextRequest) {
     );
 
     const userData = await response.json();
-    console.log(userData);
+    // console.log(userData);
 
     await connectDB();
 
     const searchUser = await user.findOne({ email: userData.email });
 
-    console.log(searchUser);
+    // console.log(searchUser);
 
     let result: UserResponse;
 
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
       };
 
       for (let i = 0; i < result.chats.length; i++) {
-        console.log(result.chats[i]);
+        // console.log(result.chats[i]);
         let chatUser;
         result.chats[i]["name"] = [];
         result.chats[i]["email"] = [];
@@ -111,8 +111,8 @@ export async function POST(req: NextRequest) {
           result.chats[i]["email"].push(chatUser.email);
           result.chats[i]["picture"] = chatUser.picture;
         }
-        console.log(chatUser);
-        console.log(result.chats[i]);
+        // console.log(chatUser);
+        // console.log(result.chats[i]);
       }
 
       for (let i = 0; i < result.contacts.length; i++) {
@@ -124,11 +124,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log(result);
+    // console.log(result);
 
     return NextResponse.json(result);
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     return NextResponse.json({
       success: false,
     });

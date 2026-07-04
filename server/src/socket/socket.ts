@@ -13,6 +13,7 @@ interface ActiveUser {
 let activeUser: ActiveUser = {};
 
 export default function initializeSocket(io: Server) {
+  
   io.use((socket, next) => {
     console.log("A user is trying to connect");
     const { id, name, email } = socket.handshake.auth;
@@ -65,7 +66,7 @@ export default function initializeSocket(io: Server) {
         const activeStatus: boolean =
           activeUser[userId]?.activeChatId == chatId ? true : false;
         console.log({ senderId, userId, sendMessage, activeStatus });
-        updateUserMessage(senderId, userId, sendMessage, activeStatus);
+        updateUserMessage(senderId, userId, sendMessage, activeStatus,chatId);
       }
     });
     socket.on(
@@ -93,7 +94,7 @@ export default function initializeSocket(io: Server) {
           const activeStatus: boolean =
             activeUser[userId]?.activeChatId == chatId ? true : false;
           console.log({ senderId, userId, sendMessage, activeStatus });
-          updateUserMessage(senderId, userId, sendMessage, activeStatus);
+          updateUserMessage(senderId, userId, sendMessage, activeStatus,chatId);
         }
       },
     );
@@ -115,8 +116,6 @@ export default function initializeSocket(io: Server) {
         console.log(activeUser);
         console.log("socket userId :- ", user.socketId);
         io.to(user.socketId).emit("newGroupAdd", chats[userId]);
-        io.to(user.socketId).emit("hello");
-        socket.emit("hello");
       }
     });
 

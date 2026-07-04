@@ -56,7 +56,7 @@ export default function Banner() {
   const [now, setNow] = useState<Date>(new Date());
 
   useEffect(() => {
-    console.log(userData);
+    // console.log(userData);
   }, [userData]);
 
   useEffect(() => {

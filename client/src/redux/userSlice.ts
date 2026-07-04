@@ -20,6 +20,7 @@ interface Chats {
 }
 
 interface UserState {
+  activeChatId: string | null;
   id: string | null;
   name: string | null;
   email: string | null;
@@ -32,6 +33,7 @@ interface UserState {
 }
 
 const initialState: UserState = {
+  activeChatId: null,
   id: null,
   name: null,
   email: null,
@@ -61,13 +63,20 @@ const userSlice = createSlice({
     updateChatList: (state, action) => {
       state.chats = action.payload.chats;
     },
+    SetActiveChatId: (state, action) => {
+      state.activeChatId = action.payload;
+      console.log(state.activeChatId);
+    },
     updateUnReadMessage: (state, action) => {
+      console.log("updateUnReadMessage",state.activeChatId);
+      if(state.activeChatId ==  action.payload.chatId) return;
       const index = state.chats.findIndex(
         (chat) => chat.chatId === action.payload.chatId,
       );
       state.chats[index].preview = action.payload.message;
-      state.chats[index].unreadCount += 1;
       state.chats[index].lastMessageTime = new Date().toISOString();
+      state.chats[index].unreadCount += 1;
+
     },
     updateActiveChat: (state, action) => {
       const index = state.chats.findIndex(
@@ -140,6 +149,7 @@ const userSlice = createSlice({
 export const {
   setUser,
   updateChatList,
+  SetActiveChatId,
   updateUnReadMessage,
   updateActiveChat,
   setOnlineUsersList,

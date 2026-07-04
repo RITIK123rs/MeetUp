@@ -22,7 +22,7 @@ export default function MessageBox() {
     if (!enterID.current) return;
     const enterUserId = enterID.current.value,
       userExist = userContacts.find((data) => data.userId == enterUserId);
-    console.log("check user in list :- ", userExist);
+    // console.log("check user in list :- ", userExist);
     if (userId == enterUserId || userExist?.userId == enterUserId) return;
     const res = await axios.post("/api/chat/userAdd", {
       userId,
@@ -30,16 +30,16 @@ export default function MessageBox() {
       userPicture,
       addUserId: enterID.current.value,
     });
-    console.log(res.data);
+    // console.log(res.data);
     if (res.data.success) {
-      console.log(res.data.userData);
+      // console.log(res.data.userData);
       Dispatch(addNewUser(res.data.userData));
       socket.emit("newContactAdd", {
         userId: res.data.addUserId,
         data: res.data.addedUserData,
       });
     } else {
-      console.log(res.data.message);
+      // console.log(res.data.message);
     }
   }
 

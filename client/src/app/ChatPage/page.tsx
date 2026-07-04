@@ -17,14 +17,12 @@ import { useSelector, useDispatch } from "react-redux";
 import { ChatEmptyState, SidebarEmptyState } from "./chatEmptyState";
 import { RootState } from "@/redux/store";
 import {
+  SetActiveChatId,
   updateChatList,
-  updateUnReadMessage,
   updateActiveChat,
   setOnlineUsersList,
   setUserOnline,
   setUserOffline,
-  addNewUser,
-  addNewGroup,
 } from "@/redux/userSlice";
 import { socket } from "@/lib/socket";
 import GroupPanel from "./groupPanel";
@@ -44,15 +42,17 @@ interface Chats {
 
 interface ActiveChatUser {
   id?: string;
-  name?: string;
+  name?: string[];
   groupName?: string;
-  names?: string[];
   picture?: string;
 }
 
 export default function ChatPage() {
+  const chatId: string | null = useSelector(
+    (state: RootState) => state.user.activeChatId,
+  );
   const [activeChat, setActiveChat] = useState<null | any>(null);
-  const [activeChatId, setActiveChatId] = useState<string>("");
+  const [activeChatId, setActiveChatId] = useState<string >(chatId);
   const [activeChatStatus, setActiveChatStatus] = useState<boolean | undefined>(
     false,
   );
@@ -81,45 +81,34 @@ export default function ChatPage() {
     activeChatRef.current = activeChat;
   }, [activeChat]);
 
+  useEffect(()=>{
+    Dispatch(SetActiveChatId(activeChatId));
+  },[activeChatId])
+
   useEffect(() => {
     socket.emit("onlineUsers", (users: string[]) => {
-      console.log("online user Active :- ", users);
+      // console.log("online user Active :- ", users);
       Dispatch(setOnlineUsersList(users));
     });
     socket.on("userOnline", (userId: string) => {
-      console.log("online user :- ", userId);
+      // console.log("online user :- ", userId);
       if (userId == activeChatId) setActiveChatStatus(false);
       Dispatch(setUserOnline(userId));
     });
     socket.on("userOffline", (userId: string) => {
-      console.log("offline user :- ", userId);
+      // console.log("offline user :- ", userId);
       if (userId == activeChatId) setActiveChatStatus(false);
       Dispatch(setUserOffline(userId));
     });
 
     socket.on("newMessage", handleNewMessage);
 
-    socket.on("newContact", (data) => {
-      console.log("newContact :- ", data);
-      Dispatch(addNewUser(data));
-    });
-
-    socket.on("newGroupAdd", (chat) => {
-      console.log("Received NewGroup:", chat);
-      Dispatch(addNewGroup(chat));
-    });
-
-    socket.on("hello", () => {
-      console.log("hello");
-    });
 
     return () => {
       socket.off("newMessage", handleNewMessage);
       socket.off("onlineUsers");
       socket.off("userOnline");
       socket.off("userOffline");
-      socket.off("newContact");
-      socket.off("newGroupAdd");
     };
   }, []);
 
@@ -138,21 +127,19 @@ export default function ChatPage() {
     senderId: string;
     message: string;
   }): void {
-    if (activeChatIdRef.current !== chatId) {
-      console.log("non active chat message");
-      Dispatch(
-        updateUnReadMessage({
-          message,
-          chatId,
-        }),
-      );
-
-      return;
-    }
-
-    console.log("handleNewMessage :-", { chatId, senderId, message });
-
+    if (activeChatIdRef.current != chatId) return;
     if (!activeChatRef.current) return;
+
+    // console.log("handleNewMessage :-", { chatId, senderId, message });
+
+    // console.log("receive message (update)");
+
+    Dispatch(
+      updateActiveChat({
+        message,
+        chatId,
+      }),
+    );
 
     const current = activeChatRef.current;
     const isNewDay =
@@ -164,7 +151,6 @@ export default function ChatPage() {
         date: new Date(),
         chats: [
           {
-            id: Date.now(),
             sender: senderId,
             textMessage: true,
             text: message,
@@ -172,7 +158,7 @@ export default function ChatPage() {
           },
         ],
       };
-      console.log({ data });
+      // console.log({ data });
       setActiveChat({
         ...current,
         messageGroups: [...current.messageGroups, data],
@@ -188,7 +174,7 @@ export default function ChatPage() {
         createdAt: new Date(),
       };
       const lastChatIndex = current.messageGroups.length - 1;
-      console.log({ data });
+      // console.log({ data });
       setActiveChat({
         ...current,
         messageGroups: current.messageGroups.map((group, index) =>
@@ -207,15 +193,15 @@ export default function ChatPage() {
     await fetch(`/api/chat/${chatId}`)
       .then((res) => res.json())
       .then((data) => {
-        console.log(data);
+        // console.log(data);
         let filterData: string[] = [];
         for (let user of data.data.users) {
           if (user.userId != userId) filterData.push(user.userId);
         }
-        console.log("filter");
+        // console.log("filter");
         setUserList(filterData);
-        console.log(filterData);
-        console.log("chat Data :-", data.data);
+        // console.log(filterData);
+        // console.log("chat Data :-", data.data);
         setActiveChat(data.data);
       })
       .catch((err) => console.log(err));
@@ -230,7 +216,7 @@ export default function ChatPage() {
       })
         .then((res) => res.json())
         .then((data) => {
-          console.log(data);
+          // console.log(data);
           if (data.success) {
             Dispatch(
               updateChatList({
@@ -239,12 +225,13 @@ export default function ChatPage() {
             );
           }
         })
-        .catch((err) => console.log(err));
+        .catch((err) => console.log(err) 
+        );
     }
   }
 
   function displayMessage(messageType: string, emoji: string = ""): void {
-    console.log(messageType, emoji);
+    // console.log(messageType, emoji);
 
     if (!activeChat) return;
 
@@ -253,10 +240,10 @@ export default function ChatPage() {
     }
     const lastChatIndex: number = activeChat.messageGroups.length - 1;
 
-    console.log(
-      new Date(activeChat.lastMessageAt).toDateString(),
-      new Date().toDateString(),
-    );
+    // console.log(
+    //   new Date(activeChat.lastMessageAt).toDateString(),
+    //   new Date().toDateString(),
+    // );
 
     if (
       new Date(activeChat.lastMessageAt).toDateString() !=
@@ -266,7 +253,6 @@ export default function ChatPage() {
         date: new Date(),
         chats: [
           {
-            id: Date.now(),
             sender: userId,
             textMessage: messageType == "text" ? true : false,
             text: messageType == "text" ? sendMessage : emoji,
@@ -275,12 +261,12 @@ export default function ChatPage() {
         ],
       };
 
-      console.log(data);
+      // console.log(data);
 
       setActiveChat({
         ...activeChat,
         messageGroups: [...activeChat.messageGroups, data],
-        lastMessage: sendMessage,
+        lastMessage: messageType == "text" ? sendMessage : emoji,
         lastMessageAt: new Date(),
       });
 
@@ -289,18 +275,17 @@ export default function ChatPage() {
         chatId: activeChatId,
         senderId: userId,
         data,
-        sendMessage,
+        sendMessage: messageType == "text" ? sendMessage : emoji,
       });
     } else {
       const data = {
-        id: Date.now(),
         sender: userId,
         textMessage: messageType == "text" ? true : false,
         text: messageType == "text" ? sendMessage : emoji,
         createdAt: new Date(),
       };
 
-      console.log(data);
+      // console.log(data);
 
       setActiveChat({
         ...activeChat,
@@ -312,7 +297,7 @@ export default function ChatPage() {
               }
             : group,
         ),
-        lastMessage: sendMessage,
+        lastMessage: messageType == "text" ? sendMessage : emoji,
         lastMessageAt: new Date(),
       });
 
@@ -321,13 +306,14 @@ export default function ChatPage() {
         chatId: activeChatId,
         senderId: userId,
         data,
-        sendMessage,
+        sendMessage: messageType == "text" ? sendMessage : emoji,
       });
     }
-    console.log(activeChat);
+
+    // console.log(activeChat);
     Dispatch(
       updateActiveChat({
-        message: sendMessage,
+        message: messageType == "text" ? sendMessage : emoji,
         chatId: activeChatId,
       }),
     );
@@ -372,37 +358,35 @@ export default function ChatPage() {
                 online={data?.onlineStatus}
                 onClick={() => {
                   selectedChat(data.chatId, data.unreadCount);
-                  setActiveChatId(data.chatId);
-                  console.log("user set Data :- ");
-                  console.log(data);
+                  // console.log("user set Data :- ");
+                  // console.log(data);
                   if (!data.isGroup) {
                     setIsGroupChat(false);
                     setActiveChatStatus(data?.onlineStatus);
                     setActiveChatUser({
                       id: data.UserId[0],
-                      name: data.name[0],
+                      name: data.name,
                       picture: data.picture,
                     });
-                    console.log("active Chat (!isGroup) :- ", {
-                      name: data.name[0],
-                      userId,
-                      sendId: data.UserId[0],
-                      chatId: data.chatId,
-                    });
+                    // console.log("active Chat (!isGroup) :- ", {
+                    //   name: data.name,
+                    //   userId,
+                    //   sendId: data.UserId[0],
+                    //   chatId: data.chatId,
+                    // });
                   } else {
                     setIsGroupChat(true);
                     setActiveChatUser({
                       groupName: data.groupName,
-                      names: data.name,
+                      name: data.name,
                       picture: "/groupPic.jpg",
                     });
-                    console.log("active Chat (isGroup) :- ", {
-                      groupName: data.groupName,
-                      names: data.name,
-                      picture: "/groupPic.jpg",
-                    });
+                    // console.log("active Chat (isGroup) :- ", {
+                    //   groupName: data.groupName,
+                    //   name: data.name,
+                    //   picture: "/groupPic.jpg",
+                    // });
                   }
-
                   socket.emit("activeChat", { userId, chatId: data.chatId });
                 }}
               />
@@ -427,11 +411,13 @@ export default function ChatPage() {
               />
               <div className="ms-3 flex flex-col gap-0.5">
                 <span className="chat-name">
-                  {isGroupChat ? activeChatUser.groupName : activeChatUser.name}
+                  {isGroupChat
+                    ? activeChatUser.groupName
+                    : activeChatUser.name?.[0]}
                 </span>
                 <span className="chat-username">
                   {isGroupChat
-                    ? activeChatUser.names?.join(", ")
+                    ? activeChatUser.name?.join(", ")
                     : activeChatUser.id}
                 </span>
                 <span
@@ -490,7 +476,7 @@ export default function ChatPage() {
                 rows={1}
                 value={sendMessage}
                 onChange={(e) => {
-                  // console.log(e.target.value);
+                  // // console.log(e.target.value);
                   setSendMessage(e.target.value);
                 }}
               />

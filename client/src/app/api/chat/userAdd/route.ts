@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   await connectDB();
   try {
     const { userId, userName, userPicture, addUserId } = await req.json();
-    console.log({ userId, userName, addUserId });
+    // console.log({ userId, userName, addUserId });
     let userCheck;
     try {
       userCheck = await user.findById(addUserId, {
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
         message: "wrong Input",
       });
     }
-    console.log(userCheck);
+    // console.log(userCheck);
     if (!userCheck)
       return NextResponse.json({
         success: false,
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       lastMessageAt: new Date(0),
     });
 
-    console.log(chatData);
+    // console.log(chatData);
 
     await user.findByIdAndUpdate(userId, {
       $inc: { contactNo: 1 },

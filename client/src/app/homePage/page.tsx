@@ -15,8 +15,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/redux/store";
 import { useRouter } from "next/navigation";
 import { socket } from "@/lib/socket";
-import {addNewUser, addNewGroup} from "@/redux/userSlice";
-
+import { addNewUser, addNewGroup, updateUnReadMessage } from "@/redux/userSlice";
 
 const menuBtnBase: string =
   "w-12 h-12 flex rounded-xl items-center justify-center text-text-secondary transition-colors duration-150 hover:bg-[var(--bg-hover)] hover:text-text-primary";
@@ -35,7 +34,7 @@ function HomePageMain() {
 }
 
 export default function homePage() {
-  const Dispatch = useDispatch()
+  const Dispatch = useDispatch();
   const router = useRouter();
   const [mainContent, setMainContent] = useState<string>("homePage");
   const userPicture: string = useSelector(
@@ -53,7 +52,7 @@ export default function homePage() {
     }
 
     if (socket.connected) {
-      console.log("Socket is already connected");
+      // console.log("Socket is already connected");
       return;
     }
 
@@ -65,13 +64,36 @@ export default function homePage() {
       email: userData.email,
     };
     socket.connect();
-    // socket.on("NewGroupAdd", (chat)=>{
-    //   Dispatch(addNewGroup(chat));
-    // })
+
+    socket.on("newMessage", ({chatId,
+    senderId,
+    message})=>{
+      console.log("updateUnReadMessage",{chatId,
+    senderId,
+    message});
+      Dispatch(
+        updateUnReadMessage({
+          message,
+          chatId,
+        }),
+      );
+    } );
+
+    socket.on("newContact", (data) => {
+      // console.log("newContact :- ", data);
+      Dispatch(addNewUser(data));
+    });
+
+    socket.on("newGroupAdd", (chat) => {
+      // console.log("Received NewGroup:", chat);
+      Dispatch(addNewGroup(chat));
+    });
 
     return () => {
-      socket.disconnect();
-      // socket.off("NewGroupAdd");
+      // socket.disconnect();
+      socket.off("newMessage");
+      socket.off("newContact");
+      socket.off("newGroupAdd");
     };
   }, []);
 

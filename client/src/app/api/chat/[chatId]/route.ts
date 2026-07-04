@@ -14,7 +14,7 @@ export async function GET(
     const { chatId } = await params;
     await connectDB();
     const searchChat = await chat.findById(chatId).lean();
-    console.log(searchChat);
+    // console.log(searchChat);
 
     if (!searchChat) {
       return NextResponse.json({
@@ -32,7 +32,7 @@ export async function GET(
       searchChat.users[index].picture = chatUser?.picture;
     }
 
-    console.log("search chat :- ", searchChat);
+    // console.log("search chat :- ", searchChat);
 
     return NextResponse.json({
       success: true,
@@ -55,7 +55,7 @@ export async function PATCH(
     const { chatId } = await params;
     const { userId } = await req.json();
 
-    console.log(chatId, userId);
+    // console.log({ chatId, userId });
 
     const updatedData = await user
       .findOneAndUpdate(
@@ -68,27 +68,37 @@ export async function PATCH(
       )
       .lean();
 
-    console.log(updatedData);
+    // console.log({ updatedData });
+
+    if (!updatedData) {
+      return NextResponse.json({ success: false, message: "User not found" });
+    }
 
     for (let i = 0; i < updatedData.chats.length; i++) {
       // console.log(updatedData.chats[i]);
-      const chatUser = await user
-        .findById(updatedData.chats[i].UserId)
-        .select(" name email picture ")
-        .lean();
+      let chatUser;
+      updatedData.chats[i]["name"] = [];
+      updatedData.chats[i]["email"] = [];
+      for (let j = 0; j < updatedData.chats[i].UserId.length; j++) {
+        chatUser = await mongoose.models.user
+          .findById(updatedData.chats[i].UserId[j])
+          .select(" name email picture ")
+          .lean();
+        updatedData.chats[i]["name"].push(chatUser.name);
+        updatedData.chats[i]["email"].push(chatUser.email);
+        updatedData.chats[i]["picture"] = chatUser.picture;
+      }
       // console.log(chatUser);
-      updatedData.chats[i]["name"] = [chatUser.name];
-      updatedData.chats[i]["email"] = [chatUser.email];
-      updatedData.chats[i]["picture"] = chatUser.picture;
+      // console.log(updatedData.chats[i]);
     }
 
-    console.log(updatedData.chats);
+    // console.log(updatedData.chats);
     return NextResponse.json({
       success: true,
       chats: updatedData.chats,
     });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     return NextResponse.json({
       success: false,
     });

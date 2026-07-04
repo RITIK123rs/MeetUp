@@ -7,6 +7,7 @@ import connectDB from "./config/db";
 import { Server } from "socket.io";
 import http from "http";
 import initializeSocket from "./socket/socket";
+import initializeVideoCallSocket from "./videoChat/socket";
 import newGroupRouter from "./handler/newGroup";
 
 connectDB();
@@ -24,6 +25,8 @@ const io= new Server(server,{
 })
 
 initializeSocket(io);
+const videoChat = io.of("/videoChat");
+initializeVideoCallSocket(videoChat);
 
 app.get("/health",(req,res)=>{
     res.json("Server is Running Successfully")

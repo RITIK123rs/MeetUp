@@ -1,9 +1,11 @@
 import UserReducer from "./userSlice"
+import videoChatReducer from "./videoChatSlice"
 import { configureStore} from "@reduxjs/toolkit"
 
 export const store= configureStore({
     reducer: {
         user: UserReducer,
+        videoChat: videoChatReducer,
     }
 });
 
