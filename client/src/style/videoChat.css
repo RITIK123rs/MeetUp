@@ -89,6 +89,9 @@
 }
 
 .videoCallGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
   width: 100%;
   align-content: flex-start;
 }
@@ -124,17 +127,24 @@
   position: absolute;
   bottom: 16px;
   right: 16px;
-  width: 200px;
-  height: 140px;
+  width: 210px;
+  height: 158px;
   border: 2px solid rgba(124, 58, 237, 0.55);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
   z-index: 5;
 }
 
 .videoTile-grid {
-  flex: 1 1 calc(33.333% - 12px);
-  min-width: 220px;
+  width: 100%;
   aspect-ratio: 4 / 3;
+  min-width: 0; 
+}
+
+@media (max-width: 900px) {
+  .videoCallGrid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .videoCallGrid { grid-template-columns: 1fr; }
 }
 
 .videoTile-bg {
@@ -150,22 +160,19 @@
 }
 
 .videoTile-avatarCircle {
-  width: 56px;
-  height: 56px;
+  width: clamp(48px, 9vw, 110px);
+  height: clamp(48px, 9vw, 110px);
   border-radius: 50%;
-  background: rgba(124, 58, 237, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-primary);
 }
 
 .videoTile-pip .videoTile-avatarCircle {
-  width: 40px;
-  height: 40px;
-  font-size: 1rem;
+  width: 70px;
+  height: 70px;
+}
+.videoTile-full .videoTile-avatarCircle,
+.videoTile-big .videoTile-avatarCircle {
+  width: clamp(120px, 14vw, 180px);
+  height: clamp(120px, 14vw, 180px);
 }
 
 .videoTile-info {
@@ -374,14 +381,6 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(124, 58, 237, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  flex-shrink: 0;
 }
 
 .videoCallParticipantRow-info {
@@ -438,7 +437,10 @@
   background: var(--bg-elevated);
   color: var(--text-secondary);
   border: 1px solid var(--border-subtle);
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .videoCallControlBtn:hover {

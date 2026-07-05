@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   IoMic,
   IoMicOff,
@@ -20,15 +20,22 @@ import { MdScreenShare, MdStopScreenShare } from "react-icons/md";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/redux/store";
 import { videoChatSocket } from "@/lib/socket";
-import { newUserAdded } from "@/redux/videoChatSlice";
+import {
+  newUserAdded,
+  clickOnMic,
+  clickOnCamera,
+  setUserMic,
+  setUserCamera,
+} from "@/redux/videoChatSlice";
 import "@/style/videoChat.css";
+import * as mediasoupClient from "mediasoup-client";
 
 type Participant = {
   name: string;
   socketId: string;
   pic: string;
-  mic: "on" | "off";
-  camera: "on" | "off";
+  mic: boolean;
+  camera: boolean;
 };
 
 type ChatMessage = {
@@ -37,6 +44,28 @@ type ChatMessage = {
   text: string;
   time: string;
   isMe?: boolean;
+};
+
+type Consumers = {
+  [producerId: string]: {
+    consumer: mediasoupClient.types.Consumer;
+    transport: mediasoupClient.types.Transport;
+  };
+};
+
+type TransportParams = {
+  id: string;
+  iceParameters: mediasoupClient.types.IceParameters;
+  iceCandidates: mediasoupClient.types.IceCandidate[];
+  dtlsParameters: mediasoupClient.types.DtlsParameters;
+};
+
+type ConsumeResponse = {
+  id: string;
+  producerId: string;
+  kind: "audio" | "video";
+  rtpParameters: mediasoupClient.types.RtpParameters;
+  producerUserId: string;
 };
 
 const defaultMessages: ChatMessage[] = [
@@ -62,28 +91,191 @@ export default function VideoChat() {
     roomId,
     roomName,
     UserNo: totalUsers,
-    joinUser: Users,
+    joinUser: participants,
   } = useSelector((state: RootState) => state.videoChat);
+  // console.log(participants);
   const Dispatch = useDispatch();
-  const [micOn, setMicOn] = useState(true);
-  const [cameraOn, setCameraOn] = useState(true);
+  const [micOn, setMicOn] = useState<boolean>(participants[id].mic);
+  const [cameraOn, setCameraOn] = useState<boolean>(participants[id].camera);
   const [screenShareOn, setScreenShareOn] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [participantsOpen, setParticipantsOpen] = useState(false);
-  const [participants, setParticipants] = useState(Users);
   const [messages, setMessages] = useState<ChatMessage[]>(defaultMessages);
   const [chatInput, setChatInput] = useState("");
 
-  useEffect(()=>{
-    videoChatSocket.on("newUserJoin",(userId,user)=>{
-      Dispatch(newUserAdded({userId,user}));
+  const deviceRef = useRef<mediasoupClient.Device | null>(null);
+  const sendTransportRef = useRef<mediasoupClient.types.Transport | null>(null);
+  const consumersRef = useRef<Consumers>({});
+  const streamRef = useRef<MediaStream | null>(null);
+  const streamListRef = useRef<{
+    [userId: string]: MediaStream;
+  }>({});
+  const [, reRender] = useState(0);
+  const bump = () => reRender((n) => n + 1);
+  const videoProducerRef = useRef<mediasoupClient.types.Producer | null>(null);
+  const audioProducerRef = useRef<mediasoupClient.types.Producer | null>(null);
+
+  useEffect(() => {
+    videoChatSocket.on("newUserJoin", (userId, user) => {
+      console.log("newUserJoin");
+      Dispatch(newUserAdded({ userId, user }));
     });
 
-    return ()=>{
+    return () => {
       videoChatSocket.off("newUserJoin");
-    }
+    };
+  }, []);
 
-  },[])
+  function emit(event: string, data: any = null) {
+    return new Promise((resolve, reject) => {
+      if (!videoChatSocket?.connected)
+        return reject(new Error("Socket not connected"));
+      data === null
+        ? videoChatSocket.emit(event, resolve)
+        : videoChatSocket.emit(event, data, resolve);
+    });
+  }
+
+  const consume = async (producerId: string) => {
+    console.log("consume Start");
+    if (
+      consumersRef.current == null ||
+      deviceRef.current == null ||
+      producerId in consumersRef.current
+    )
+      return;
+    console.log("consume - transportParams");
+    const transportParams: TransportParams = (await emit(
+      "createRecvTransport",
+    )) as TransportParams;
+    const transportId = transportParams.id;
+    const recvTransport =
+      deviceRef.current.createRecvTransport(transportParams);
+    console.log("consume - recvTransport");
+    recvTransport.on("connect", ({ dtlsParameters }, callback, errback) => {
+      emit("connectRecvTransport", { transportId, dtlsParameters })
+        .then(callback)
+        .catch(errback);
+    });
+    console.log("consume - data");
+    const data: ConsumeResponse = (await emit("consume", {
+      producerId,
+      transportId,
+      rtpCapabilities: deviceRef.current.rtpCapabilities,
+    })) as ConsumeResponse;
+    console.log("consume - consumer");
+    const consumer = await recvTransport.consume({
+      id: data.id,
+      producerId: data.producerId,
+      kind: data.kind,
+      rtpParameters: data.rtpParameters,
+    });
+    await emit("resumeConsumer", {
+      consumerId: consumer.id,
+    });
+    consumer.track.enabled = true;
+    consumersRef.current[producerId] = {
+      consumer,
+      transport: recvTransport,
+    };
+    // const stream = new MediaStream([consumer.track]);
+    // const videoEl = document.getElementById(
+    //   `remoteVideo-${userId}`,
+    // ) as HTMLVideoElement | null;
+    // if (videoEl) videoEl.srcObject = stream;
+    const userId = data.producerUserId;
+    console.log({ userId });
+    const stream = streamListRef.current[userId] ?? new MediaStream();
+    stream.addTrack(consumer.track);
+    streamListRef.current[userId] = stream;
+    bump();
+  };
+
+  const init = async () => {
+    console.log("init Start");
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true,
+    });
+    console.log("Init - setStreamList");
+    streamRef.current = stream;
+    streamListRef.current[id] = stream;
+    bump();
+    // const localVideo = document.getElementById("localVideo");
+    // if (localVideo) {
+    //   (localVideo as HTMLVideoElement).srcObject = stream;
+    // }
+    const rtpCapabilities: mediasoupClient.types.RtpCapabilities = (await emit(
+      "getRtpCapabilities",
+    )) as mediasoupClient.types.RtpCapabilities;
+    console.log("Init - rtpCapabilities ");
+    const device = new mediasoupClient.Device();
+    await device.load({ routerRtpCapabilities: rtpCapabilities });
+    deviceRef.current = device;
+    const transportParams: TransportParams = (await emit(
+      "createSendTransport",
+    )) as TransportParams;
+    console.log("Init - transportParams ");
+    const sendTransport = device.createSendTransport(transportParams);
+    sendTransportRef.current = sendTransport;
+    sendTransport.on("connect", ({ dtlsParameters }, callback, errback) => {
+      emit("connectSendTransport", { dtlsParameters })
+        .then(callback)
+        .catch(errback);
+    });
+    console.log("Init - sendTransport(connect) ");
+    sendTransport.on(
+      "produce",
+      ({ kind, rtpParameters, appData }, callback, errback) => {
+        emit("produce", { kind, rtpParameters, appData })
+          .then((r) => callback({ id: r.id }))
+          .catch(errback);
+      },
+    );
+    console.log("Init - sendTransport(produce) ");
+    for (const track of stream.getTracks()) {
+      const producer = await sendTransport.produce({
+        track,
+        appData: { source: track.kind === "video" ? "camera" : "mic" },
+      });
+      if (track.kind === "video") {
+        videoProducerRef.current = producer;
+      } else {
+        audioProducerRef.current = producer;
+      }
+    }
+    console.log("Init - ", streamListRef.current);
+    const producers = (await emit("getProducers")) as { producerId: string }[];
+    if (producers && producers.length > 0) {
+      for (const { producerId } of producers) {
+        try {
+          await consume(producerId);
+        } catch (err) {
+          console.error("Failed to consume producer", producerId, err);
+        }
+      }
+    }
+  };
+
+  useEffect(() => {
+    init();
+    videoChatSocket.on("newProducer", async ({ producerId }) => {
+      await consume(producerId);
+    });
+
+    videoChatSocket.on("producerStateChanged", ({ userId, kind, paused }) => {
+    if (kind === "audio") {
+      Dispatch(setUserMic({ userId, mic: !paused }));
+    } else {
+      Dispatch(setUserCamera({ userId, camera: !paused }));
+    }
+  });
+
+    return () => {
+      videoChatSocket.off("newProducer");
+      videoChatSocket.off("producerStateChanged");
+    };
+  }, []);
 
   const handleSendMessage = () => {
     const trimmed = chatInput.trim();
@@ -112,8 +304,9 @@ export default function VideoChat() {
     isMe: boolean,
     size: "full" | "big" | "pip" | "grid",
   ) => {
-    const tileMicOn = isMe ? micOn : (user.mic ?? true);
-    const tileCameraOn = isMe ? cameraOn : (user.camera ?? true);
+    const tileMicOn = user.mic;
+    const tileCameraOn = user.camera;
+    console.log(streamListRef.current);
 
     return (
       <div
@@ -121,15 +314,28 @@ export default function VideoChat() {
         className={`videoTile videoTile-${size} ${isMe ? "videoTile-me" : ""}`}
       >
         {tileCameraOn ? (
-          <span
-            className="videoTile-bg absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${user.pic || "userPic.jpg"})` }}
-          />
+          <span className="videoTile-bg absolute inset-0 bg-cover bg-center">
+            <video
+              ref={(el: HTMLVideoElement | null) => {
+                if (!el) return;
+                const stream = streamListRef.current[userId];
+                if (stream && el.srcObject !== stream) {
+                  el.srcObject = stream;
+                }
+              }}
+              id={`${isMe ? "localVideo" : `remoteVideo-${userId}`}`}
+              className="w-[100%] h-[100%]"
+              autoPlay
+              playsInline
+              muted={isMe}
+            ></video>
+          </span>
         ) : (
           <div className="videoTile-avatarFallback absolute inset-0 flex items-center justify-center">
-            <div className="videoTile-avatarCircle">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
+            <div
+              className="videoTile-avatarCircle bg-center bg-cover"
+              style={{ backgroundImage: `url(${user.pic})` }}
+            ></div>
           </div>
         )}
         <div className="videoTile-info absolute bottom-2 left-2 flex items-center gap-1">
@@ -155,7 +361,7 @@ export default function VideoChat() {
           <div className="flex flex-col gap-1">
             <span className="videoCall-title ms-2">{roomName}</span>
             <span className="videoCall-roomId">
-              ID:<span className="font-bold">{roomId}</span>{" "}
+              Room ID: <span className="font-bold pe-1.5">{roomId}</span>
             </span>
           </div>
         </div>
@@ -190,10 +396,10 @@ export default function VideoChat() {
             })()}
 
           {totalUsers >= 3 && (
-            <div className="videoCallGrid flex flex-wrap gap-3">
+            <div className="videoCallGrid">
               {Object.entries(participants).map(([userId, participant]) => (
                 <span key={userId}>
-                  {renderTile(participant,userId, userId === id, "grid")}
+                  {renderTile(participant, userId, userId === id, "grid")}
                 </span>
               ))}
             </div>
@@ -279,9 +485,10 @@ export default function VideoChat() {
                 const isMe = userId === id;
                 return (
                   <div key={userId} className="videoCallParticipantRow">
-                    <div className="videoCallParticipantRow-avatar">
-                      {participant.name.charAt(0).toUpperCase()}
-                    </div>
+                    <div
+                      className="videoCallParticipantRow-avatar bg-center bg-cover"
+                      style={{ backgroundImage: `url(${participant.pic})` }}
+                    ></div>
                     <div className="videoCallParticipantRow-info">
                       <span className="videoCallParticipantRow-name">
                         {isMe ? "You" : participant.name}
@@ -302,7 +509,28 @@ export default function VideoChat() {
         <button
           type="button"
           className={`videoCallControlBtn ${!micOn ? "videoCallControlBtn-off" : ""}`}
-          onClick={() => setMicOn((v) => !v)}
+          onClick={async () => {
+            const audioTrack = streamRef.current?.getAudioTracks()[0];
+            if (!audioTrack) return;
+            const nextState = !micOn;
+
+            if (nextState) {
+              audioTrack.enabled = true;
+              await audioProducerRef.current?.resume();
+              await emit("resumeProducer", {
+                producerId: audioProducerRef.current?.id,
+              });
+            } else {
+              audioTrack.enabled = false;
+              await audioProducerRef.current?.pause();
+              await emit("pauseProducer", {
+                producerId: audioProducerRef.current?.id,
+              });
+            }
+
+            setMicOn(nextState);
+            Dispatch(clickOnMic());
+          }}
           aria-label="Toggle microphone"
         >
           {micOn ? (
@@ -314,7 +542,28 @@ export default function VideoChat() {
         <button
           type="button"
           className={`videoCallControlBtn ${!cameraOn ? "videoCallControlBtn-off" : ""}`}
-          onClick={() => setCameraOn((v) => !v)}
+          onClick={async () => {
+            const videoTrack = streamRef.current?.getVideoTracks()[0];
+            if (!videoTrack) return;
+            const nextState = !cameraOn;
+
+            if (nextState) {
+              videoTrack.enabled = true;
+              await videoProducerRef.current?.resume();
+              await emit("resumeProducer", {
+                producerId: videoProducerRef.current?.id,
+              });
+            } else {
+              videoTrack.enabled = false;
+              await videoProducerRef.current?.pause();
+              await emit("pauseProducer", {
+                producerId: videoProducerRef.current?.id,
+              });
+            }
+
+            setCameraOn(nextState);
+            Dispatch(clickOnCamera());
+          }}
           aria-label="Toggle camera"
         >
           {cameraOn ? (
@@ -328,7 +577,7 @@ export default function VideoChat() {
           className={`videoCallControlBtn ${
             screenShareOn ? "videoCallControlBtn-active" : ""
           }`}
-          onClick={() => setScreenShareOn((v) => !v)}
+          onClick={() => setScreenShareOn((prev) => !prev)}
           aria-label="Share screen"
         >
           {screenShareOn ? (
@@ -341,7 +590,7 @@ export default function VideoChat() {
           type="button"
           className={`videoCallControlBtn ${chatOpen ? "videoCallControlBtn-active" : ""}`}
           onClick={() => {
-            setChatOpen((v) => !v);
+            setChatOpen((prev) => !prev);
             setParticipantsOpen(false);
           }}
           aria-label="Toggle chat"
@@ -358,7 +607,7 @@ export default function VideoChat() {
             participantsOpen ? "videoCallControlBtn-active" : ""
           }`}
           onClick={() => {
-            setParticipantsOpen((v) => !v);
+            setParticipantsOpen((prev) => !prev);
             setChatOpen(false);
           }}
           aria-label="Toggle participants list"

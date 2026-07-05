@@ -142,6 +142,9 @@ const userSlice = createSlice({
         current(state.chats)
       );
     },
+    incrementVideoChatCount: (state)=>{
+      state.videoChatNo +=1;
+    },
     clearUser: () => initialState,
   },
 });
@@ -158,5 +161,6 @@ export const {
   addNewUser,
   addNewGroup,
   clearUser,
+  incrementVideoChatCount,
 } = userSlice.actions;
 export default userSlice.reducer;

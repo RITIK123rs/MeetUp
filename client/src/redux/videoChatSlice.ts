@@ -5,8 +5,8 @@ interface JoinUser {
   name: string;
   socketId: string;
   pic: string;
-  mic: "on" | "off";
-  camera: "on" | "off";
+  mic: boolean;
+  camera: boolean;
 }
 
 interface VideoChatState {
@@ -15,8 +15,6 @@ interface VideoChatState {
   name: string;
   roomName: string;
   roomId: string;
-  mic: "on" | "off";
-  camera: "on" | "off";
   createdBy: string;
   UserNo: number;
   joinUser: {
@@ -30,8 +28,6 @@ const initialState: VideoChatState = {
   name: "",
   roomName: "",
   roomId: "",
-  mic: "off",
-  camera: "off",
   createdBy: "",
   UserNo: 0,
   joinUser: {},
@@ -53,8 +49,8 @@ const videoChatSlice = createSlice({
         name: action.payload.name,
         socketId: action.payload.socketId,
         pic: action.payload.pic,
-        mic: "off",
-        camera: "off",
+        mic: true,
+        camera: true,
       };
       console.log(current(state));
     },
@@ -69,12 +65,38 @@ const videoChatSlice = createSlice({
       state.UserNo = action.payload.UserNo;
       console.log(current(state));
     },
-    addNewUser: (state, action) => {
-      state.UserNo +=1;
-      state.joinUser[action.payload.userId]= action.payload.user;
+    newUserAdded: (state, action) => {
+      state.UserNo += 1;
+      state.joinUser[action.payload.userId] = action.payload.user;
+    },
+    clickOnMic: (state) => {
+      state.joinUser[state.id].mic = !state.joinUser[state.id].mic;
+    },
+    clickOnCamera: (state) => {
+      state.joinUser[state.id].camera = !state.joinUser[state.id].camera;
+    },
+    setUserMic: (state, action) => {
+      const { userId, mic } = action.payload;
+      if (state.joinUser[userId]) {
+        state.joinUser[userId].mic = mic;
+      }
+    },
+    setUserCamera: (state, action) => {
+      const { userId, camera } = action.payload;
+      if (state.joinUser[userId]) {
+        state.joinUser[userId].camera = camera;
+      }
     },
   },
 });
 
-export const { setCreateRoomData, setJoinRoomData, addNewUser } = videoChatSlice.actions;
+export const {
+  setCreateRoomData,
+  setJoinRoomData,
+  newUserAdded,
+  clickOnMic,
+  clickOnCamera,
+  setUserMic,
+  setUserCamera,
+} = videoChatSlice.actions;
 export default videoChatSlice.reducer;

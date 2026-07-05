@@ -14,6 +14,7 @@
     "@reduxjs/toolkit": "^2.12.0",
     "axios": "^1.18.0",
     "dotenv": "^17.4.2",
+    "mediasoup-client": "^3.21.0",
     "mongodb": "^7.3.0",
     "mongoose": "^9.7.0",
     "next": "16.2.7",

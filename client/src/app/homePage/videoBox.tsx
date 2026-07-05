@@ -9,15 +9,17 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/redux/store";
 import { useRouter } from "next/navigation";
 import { videoChatSocket } from "@/lib/socket";
+import {incrementVideoChatCount } from "@/redux/userSlice"
 import { setCreateRoomData, setJoinRoomData } from "@/redux/videoChatSlice";
+import axios from "axios";
 
 interface JoinUsers {
   [userId: string]: {
     socketId: string;
     name: string | undefined;
     pic: string | undefined;
-    mic: "on" | "off";
-    camera: "on" | "off";
+    mic: boolean;
+    camera: boolean;
   };
 }
 
@@ -50,7 +52,7 @@ export default function VideoBox() {
     // };
   }, []);
 
-  function createRoom(e: React.FormEvent<HTMLFormElement>) {
+  async function createRoom(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (generatedRoomID.trim().length <= 0 || roomName?.trim().length <= 0)
       return;
@@ -61,8 +63,8 @@ export default function VideoBox() {
       socketId: videoChatSocket.id,
       roomId: generatedRoomID,
       pic,
-      mic: "off",
-      camera: "off",
+      mic: true,
+      camera: true,
     };
     Dispatch(
       setCreateRoomData({
@@ -79,6 +81,8 @@ export default function VideoBox() {
     const RoomId = generatedRoomID;
     setGeneratedRoomID("");
     setRoomName("");
+    await axios.get(`/api/user/${id}`);
+    Dispatch(incrementVideoChatCount())
     router.push(`/videoChat/${RoomId}`);
   }
 
@@ -90,9 +94,9 @@ export default function VideoBox() {
       name,
       socketId: videoChatSocket.id,
       pic,
-      roomId,
-      mic: "off",
-      camera: "off",
+      roomId:roomId.trim(),
+      mic: true,
+      camera: true,
     };
 
     console.log("Promise before");
@@ -100,7 +104,7 @@ export default function VideoBox() {
       console.log("inside Promise ");
       videoChatSocket.emit(
         "joinRoom",
-        roomId,
+        roomId.trim(),
         id,
         user,
         (
@@ -117,7 +121,7 @@ export default function VideoBox() {
               name,
               socketId: videoChatSocket.id,
               roomName: RoomName,
-              roomId,
+              roomId:roomId.trim(),
               pic,
               createdBy,
               joinUser,
@@ -135,6 +139,8 @@ export default function VideoBox() {
     }
     const RoomId = roomId;
     setRoomId("");
+    await axios.get(`/api/user/${id}`)
+    Dispatch(incrementVideoChatCount())
     router.push(`/videoChat/${RoomId}`);
   }
 
