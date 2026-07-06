@@ -95,8 +95,8 @@ export default function VideoChat() {
   } = useSelector((state: RootState) => state.videoChat);
   // console.log(participants);
   const Dispatch = useDispatch();
-  const [micOn, setMicOn] = useState<boolean>(participants[id].mic);
-  const [cameraOn, setCameraOn] = useState<boolean>(participants[id].camera);
+  const micOn = participants[id]?.mic ?? true;
+  const cameraOn = participants[id]?.camera ?? true;
   const [screenShareOn, setScreenShareOn] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [participantsOpen, setParticipantsOpen] = useState(false);
@@ -114,6 +114,7 @@ export default function VideoChat() {
   const bump = () => reRender((n) => n + 1);
   const videoProducerRef = useRef<mediasoupClient.types.Producer | null>(null);
   const audioProducerRef = useRef<mediasoupClient.types.Producer | null>(null);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     videoChatSocket.on("newUserJoin", (userId, user) => {
@@ -258,18 +259,22 @@ export default function VideoChat() {
   };
 
   useEffect(() => {
-    init();
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      init();
+    }
+
     videoChatSocket.on("newProducer", async ({ producerId }) => {
       await consume(producerId);
     });
 
     videoChatSocket.on("producerStateChanged", ({ userId, kind, paused }) => {
-    if (kind === "audio") {
-      Dispatch(setUserMic({ userId, mic: !paused }));
-    } else {
-      Dispatch(setUserCamera({ userId, camera: !paused }));
-    }
-  });
+      if (kind === "audio") {
+        Dispatch(setUserMic({ userId, mic: !paused }));
+      } else {
+        Dispatch(setUserCamera({ userId, camera: !paused }));
+      }
+    });
 
     return () => {
       videoChatSocket.off("newProducer");
@@ -304,8 +309,8 @@ export default function VideoChat() {
     isMe: boolean,
     size: "full" | "big" | "pip" | "grid",
   ) => {
-    const tileMicOn = user.mic;
-    const tileCameraOn = user.camera;
+    const tileMicOn = user?.mic ?? true;
+    const tileCameraOn = user?.camera ?? true;
     console.log(streamListRef.current);
 
     return (
@@ -313,31 +318,34 @@ export default function VideoChat() {
         key={userId}
         className={`videoTile videoTile-${size} ${isMe ? "videoTile-me" : ""}`}
       >
-        {tileCameraOn ? (
-          <span className="videoTile-bg absolute inset-0 bg-cover bg-center">
-            <video
-              ref={(el: HTMLVideoElement | null) => {
-                if (!el) return;
-                const stream = streamListRef.current[userId];
-                if (stream && el.srcObject !== stream) {
-                  el.srcObject = stream;
-                }
-              }}
-              id={`${isMe ? "localVideo" : `remoteVideo-${userId}`}`}
-              className="w-[100%] h-[100%]"
-              autoPlay
-              playsInline
-              muted={isMe}
-            ></video>
-          </span>
-        ) : (
-          <div className="videoTile-avatarFallback absolute inset-0 flex items-center justify-center">
-            <div
-              className="videoTile-avatarCircle bg-center bg-cover"
-              style={{ backgroundImage: `url(${user.pic})` }}
-            ></div>
-          </div>
-        )}
+        {
+          // tileCameraOn
+          true ? (
+            <span className="videoTile-bg absolute inset-0 bg-cover bg-center">
+              <video
+                ref={(el: HTMLVideoElement | null) => {
+                  if (!el) return;
+                  const stream = streamListRef.current[userId];
+                  if (stream && el.srcObject !== stream) {
+                    el.srcObject = stream;
+                  }
+                }}
+                id={`${isMe ? "localVideo" : `remoteVideo-${userId}`}`}
+                className="w-[100%] h-[100%]"
+                autoPlay
+                playsInline
+                muted={isMe}
+              ></video>
+            </span>
+          ) : (
+            <div className="videoTile-avatarFallback absolute inset-0 flex items-center justify-center">
+              <div
+                className="videoTile-avatarCircle bg-center bg-cover"
+                style={{ backgroundImage: `url(${user.pic})` }}
+              ></div>
+            </div>
+          )
+        }
         <div className="videoTile-info absolute bottom-2 left-2 flex items-center gap-1">
           <span
             className={`videoTile-micDot ${tileMicOn ? "mic-on" : "mic-off"}`}
@@ -513,22 +521,19 @@ export default function VideoChat() {
             const audioTrack = streamRef.current?.getAudioTracks()[0];
             if (!audioTrack) return;
             const nextState = !micOn;
-
+            audioTrack.enabled = nextState;
             if (nextState) {
-              audioTrack.enabled = true;
-              await audioProducerRef.current?.resume();
+              audioProducerRef.current?.resume();
               await emit("resumeProducer", {
                 producerId: audioProducerRef.current?.id,
               });
             } else {
-              audioTrack.enabled = false;
-              await audioProducerRef.current?.pause();
+              audioProducerRef.current?.pause();
               await emit("pauseProducer", {
                 producerId: audioProducerRef.current?.id,
               });
             }
 
-            setMicOn(nextState);
             Dispatch(clickOnMic());
           }}
           aria-label="Toggle microphone"
@@ -546,22 +551,20 @@ export default function VideoChat() {
             const videoTrack = streamRef.current?.getVideoTracks()[0];
             if (!videoTrack) return;
             const nextState = !cameraOn;
+            videoTrack.enabled = nextState;
 
             if (nextState) {
-              videoTrack.enabled = true;
-              await videoProducerRef.current?.resume();
+              videoProducerRef.current?.resume();
               await emit("resumeProducer", {
                 producerId: videoProducerRef.current?.id,
               });
             } else {
-              videoTrack.enabled = false;
-              await videoProducerRef.current?.pause();
+              videoProducerRef.current?.pause();
               await emit("pauseProducer", {
                 producerId: videoProducerRef.current?.id,
               });
             }
 
-            setCameraOn(nextState);
             Dispatch(clickOnCamera());
           }}
           aria-label="Toggle camera"

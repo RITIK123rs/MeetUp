@@ -306,11 +306,11 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
           users[peer.userId].camera = false;
         }
         const roomId = users[peer.userId].roomId as string;
-        // socket.to(roomId).emit("producerStateChanged", {
-        //   userId: peer.userId,
-        //   kind: producer.kind,
-        //   paused: true,
-        // });
+        socket.to(roomId).emit("producerStateChanged", {
+          userId: peer.userId,
+          kind: producer.kind,
+          paused: true,
+        });
       }
       callback();
     });
@@ -326,11 +326,11 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
           users[peer.userId].camera = true;
         }
         const roomId = users[peer.userId].roomId as string;
-        // socket.to(roomId).emit("producerStateChanged", {
-        //   userId: peer.userId,
-        //   kind: producer.kind,
-        //   paused: false,
-        // });
+        socket.to(roomId).emit("producerStateChanged", {
+          userId: peer.userId,
+          kind: producer.kind,
+          paused: false,
+        });
       }
       callback();
     });
