@@ -1,7 +1,6 @@
 import { Namespace } from "socket.io";
 // import mediasoup from "mediasoup";
 import * as mediasoup from "mediasoup";
-import { Socket } from "node:dgram";
 
 interface Users {
   [userId: string]: {
@@ -11,6 +10,7 @@ interface Users {
     roomId: string | undefined;
     mic: boolean;
     camera: boolean;
+    screenSharing: boolean;
   };
 }
 
@@ -83,21 +83,6 @@ function getParams(t: mediasoup.types.WebRtcTransport): TransportParams {
     iceCandidates: t.iceCandidates,
     dtlsParameters: t.dtlsParameters,
   };
-}
-
-type SocketCallback = (...responseArgs: any[]) => void;
-
-function parseArgs(args: unknown[]): {
-  cb: SocketCallback;
-  data: Record<string, any>;
-} {
-  const cb =
-    (args.find((a) => typeof a === "function") as SocketCallback) ?? (() => {});
-  const data =
-    (args.find(
-      (a) => a !== null && typeof a === "object" && typeof a !== "function",
-    ) as Record<string, any>) ?? {};
-  return { cb, data };
 }
 
 export default async function initializeVideoCallSocket(videoChat: Namespace) {
@@ -189,7 +174,7 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
       callback();
     });
 
-    socket.on("produce", async ({ kind, rtpParameters }, callback) => {
+    socket.on("produce", async ({ kind, rtpParameters, appData }, callback) => {
       const peer = peers[socket.id];
       let producer: mediasoup.types.Producer;
       if (!peer.sendTransport) return callback();
@@ -197,6 +182,7 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
       producer = await peer.sendTransport.produce({
         kind,
         rtpParameters,
+        appData,
       });
 
       peer.producers.push(producer);
@@ -204,11 +190,13 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
 
       callback({
         id: producer.id,
+        source: producer.appData.source,
       });
 
       const roomId = users[peer.userId].roomId as string;
       socket.to(roomId).emit("newProducer", {
         producerId: producer.id,
+        source: producer.appData.source,
       });
     });
 
@@ -217,7 +205,10 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
       for (const [peerId, peer] of Object.entries(peers)) {
         if (peerId !== socket.id) {
           for (const producer of peer.producers) {
-            producers.push({ producerId: producer.id });
+            producers.push({
+              producerId: producer.id,
+              source: producer.appData.source,
+            });
           }
         }
       }
@@ -346,6 +337,43 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
       }
       callback(producers);
     });
+
+    socket.on("closeProducer", ({ producerId }, callback) => {
+      const peer = peers[socket.id];
+      if (!peer) return callback();
+      const producer = peer.producers.find((p) => p.id === producerId);
+      if (!producer) return callback();
+
+      const source = producer.appData.source;
+      const userId = peer.userId;
+
+      if (source == "screen") {
+        users[userId].screenSharing = false;
+      } else {
+        users[userId].camera = false;
+        users[userId].mic = false;
+      }
+
+      const index = peer.producers.findIndex((p) => p.id === producerId);
+      if (index !== -1) peer.producers.splice(index, 1);
+
+      delete producerOwners[producer.id];
+      const roomId = users[userId]?.roomId;
+      if (roomId) {
+        socket.to(roomId).emit("producerClosed", {
+          producerId: producer.id,
+          source,
+          userId,
+        });
+      }
+      callback();
+    });
+
+    socket.on("sendMessage", (message,userId)=>{
+      const roomId = users[userId].roomId;
+      if(!roomId) return;
+      socket.to(roomId).emit("receiveMessage",message);
+    })
 
     socket.on("disconnect", () => {
       console.log("videoChat User Disconnected :- ", socket.id);

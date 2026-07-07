@@ -7,6 +7,7 @@ interface JoinUser {
   pic: string;
   mic: boolean;
   camera: boolean;
+  screenSharing: boolean;
 }
 
 interface VideoChatState {
@@ -51,6 +52,7 @@ const videoChatSlice = createSlice({
         pic: action.payload.pic,
         mic: true,
         camera: true,
+        screenSharing: false,
       };
       console.log(current(state));
     },
@@ -87,6 +89,18 @@ const videoChatSlice = createSlice({
         state.joinUser[userId].camera = camera;
       }
     },
+    setUserScreenSharing: (state, action) => {
+      const { userId, screenSharing } = action.payload;
+      if (state.joinUser[userId]) {
+        state.joinUser[userId].screenSharing = screenSharing;
+      }
+    },
+    clickOnScreenShare: (state) => {
+      if (state.joinUser[state.id]) {
+        state.joinUser[state.id].screenSharing =
+          !state.joinUser[state.id].screenSharing;
+      }
+    },
   },
 });
 
@@ -96,7 +110,9 @@ export const {
   newUserAdded,
   clickOnMic,
   clickOnCamera,
+  clickOnScreenShare,
   setUserMic,
   setUserCamera,
+  setUserScreenSharing,
 } = videoChatSlice.actions;
 export default videoChatSlice.reducer;
