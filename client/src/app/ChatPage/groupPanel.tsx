@@ -6,6 +6,7 @@ import { RootState } from "@/redux/store";
 import axios from "axios";
 import { socket } from "@/lib/socket";
 import { addNewGroup } from "@/redux/userSlice";
+import { showNotification } from "@/redux/notificationSlice";
 
 type Contacts = {
   userId: string;
@@ -22,7 +23,7 @@ interface GroupPanelProps {
   setGroupPanelStatus: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export default function GroupPanel({ setGroupPanelStatus }:GroupPanelProps) {
+export default function GroupPanel({ setGroupPanelStatus }: GroupPanelProps) {
   const Dispatch = useDispatch();
   const contacts: Contacts[] = useSelector(
     (state: RootState) => state.user.contacts,
@@ -47,7 +48,24 @@ export default function GroupPanel({ setGroupPanelStatus }:GroupPanelProps) {
   }
 
   async function handleCreateGroup() {
-    if (selectedUser.length < 3 || groupName.trim().length == 0) return;
+    if (groupName.trim().length == 0) {
+      Dispatch(
+        showNotification({
+          message: "Please enter a group name",
+          type: "error",
+        }),
+      );
+      return;
+    }
+    if (selectedUser.length < 3) {
+      Dispatch(
+        showNotification({
+          message: "Select at least 2 people to create a group",
+          type: "error",
+        }),
+      );
+      return;
+    }
     if (!id) return;
     // console.log(selectedUser);
     const res = await axios.post("http://localhost:5000/newGroupAdd", {
@@ -60,7 +78,20 @@ export default function GroupPanel({ setGroupPanelStatus }:GroupPanelProps) {
       Dispatch(addNewGroup(updateChat[id]));
       delete updateChat[id];
       socket.emit("NewGroup", updateChat);
+      Dispatch(
+        showNotification({
+          message: `Group "${groupName.trim()}" created`,
+          type: "success",
+        }),
+      );
     } else {
+      Dispatch(
+        showNotification({
+          message:
+            res.data.message || "Couldn't create the group. Please try again.",
+          type: "error",
+        }),
+      );
       // console.log("Server Error");
     }
     setGroupName("");

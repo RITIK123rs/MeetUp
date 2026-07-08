@@ -9,9 +9,10 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/redux/store";
 import { useRouter } from "next/navigation";
 import { videoChatSocket } from "@/lib/socket";
-import {incrementVideoChatCount } from "@/redux/userSlice"
+import { incrementVideoChatCount } from "@/redux/userSlice";
 import { setCreateRoomData, setJoinRoomData } from "@/redux/videoChatSlice";
 import axios from "axios";
+import { showNotification } from "@/redux/notificationSlice";
 
 interface JoinUsers {
   [userId: string]: {
@@ -54,10 +55,26 @@ export default function VideoBox() {
 
   async function createRoom(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (generatedRoomID.trim().length <= 0 || roomName?.trim().length <= 0)
+    if (generatedRoomID.trim().length <= 0) {
+      Dispatch(
+        showNotification({
+          message: "Please generate a Room ID first",
+          type: "error",
+        }),
+      );
       return;
+    }
+    if (roomName?.trim().length <= 0) {
+      Dispatch(
+        showNotification({
+          message: "Please enter a room name",
+          type: "error",
+        }),
+      );
+      return;
+    }
     console.log("Create Room");
-    console.log({name, id, pic})
+    console.log({ name, id, pic });
     const user = {
       name,
       socketId: videoChatSocket.id,
@@ -82,25 +99,33 @@ export default function VideoBox() {
     setGeneratedRoomID("");
     setRoomName("");
     await axios.get(`/api/user/${id}`);
-    Dispatch(incrementVideoChatCount())
+    Dispatch(incrementVideoChatCount());
     router.push(`/videoChat/${RoomId}`);
   }
 
   async function joinRoom(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (roomId.trim()?.length !== 12) return;
+    if (roomId.trim()?.length !== 12) {
+      Dispatch(
+        showNotification({
+          message: "Room ID must be 12 characters",
+          type: "error",
+        }),
+      );
+      return;
+    }
     console.log("Join Room");
     const user = {
       name,
       socketId: videoChatSocket.id,
       pic,
-      roomId:roomId.trim(),
+      roomId: roomId.trim(),
       mic: true,
       camera: true,
     };
 
     console.log("Promise before");
-    const res= await new Promise((resolve, reject) => {
+    const res = await new Promise((resolve, reject) => {
       console.log("inside Promise ");
       videoChatSocket.emit(
         "joinRoom",
@@ -108,11 +133,11 @@ export default function VideoBox() {
         id,
         user,
         (
-          status:boolean,
-          RoomName: string="",
-          createdBy: string="",
-          joinUser: JoinUsers={},
-          UserNo: number=0,
+          status: boolean,
+          RoomName: string = "",
+          createdBy: string = "",
+          joinUser: JoinUsers = {},
+          UserNo: number = 0,
         ) => {
           console.log("Ack received!", RoomName, createdBy, joinUser, UserNo);
           Dispatch(
@@ -121,7 +146,7 @@ export default function VideoBox() {
               name,
               socketId: videoChatSocket.id,
               roomName: RoomName,
-              roomId:roomId.trim(),
+              roomId: roomId.trim(),
               pic,
               createdBy,
               joinUser,
@@ -132,15 +157,21 @@ export default function VideoBox() {
         },
       );
     });
-    console.log("Promise After ",res);
-    if(!res){
+    console.log("Promise After ", res);
+    if (!res) {
       console.log("Wrong room Id");
+      Dispatch(
+        showNotification({
+          message: "Room not found. Check the ID and try again.",
+          type: "error",
+        }),
+      );
       return;
     }
     const RoomId = roomId;
     setRoomId("");
-    await axios.get(`/api/user/${id}`)
-    Dispatch(incrementVideoChatCount())
+    await axios.get(`/api/user/${id}`);
+    Dispatch(incrementVideoChatCount());
     router.push(`/videoChat/${RoomId}`);
   }
 

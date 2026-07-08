@@ -24,6 +24,7 @@ import {
   setUserOnline,
   setUserOffline,
 } from "@/redux/userSlice";
+import { showNotification } from "@/redux/notificationSlice";
 import { socket } from "@/lib/socket";
 import GroupPanel from "./groupPanel";
 
@@ -36,7 +37,7 @@ interface Chats {
   isGroup: boolean;
   chatId: string;
   unreadCount: number;
-  lastMessageTime: Date;
+  lastMessageTime: string | Date;
   onlineStatus?: boolean;
 }
 
@@ -52,7 +53,7 @@ export default function ChatPage() {
     (state: RootState) => state.user.activeChatId,
   );
   const [activeChat, setActiveChat] = useState<null | any>(null);
-  const [activeChatId, setActiveChatId] = useState<string >(chatId);
+  const [activeChatId, setActiveChatId] = useState<string>(chatId);
   const [activeChatStatus, setActiveChatStatus] = useState<boolean | undefined>(
     false,
   );
@@ -69,10 +70,41 @@ export default function ChatPage() {
   const personChatList: Chats[] = useSelector(
     (state: RootState) => state.user.chats,
   );
+  const [search, setSearch] = useState<string>("");
+  const [filterUserList, setFilterUserList] = useState<Chats[]>([]);
 
   const userId: string | null = useSelector(
     (state: RootState) => state.user.id,
   );
+
+  useEffect(() => {
+    const query = search.trim().toLowerCase();
+
+    if (query == "") {
+      setFilterUserList(personChatList);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const result: Chats[] = [];
+
+      personChatList.forEach((chat) => {
+        if (chat.isGroup) {
+          if (chat.groupName && chat.groupName.toLowerCase().includes(query)) {
+            result.push(chat);
+          }
+        } else {
+          if (chat.name[0].toLowerCase().includes(query)) {
+            result.push(chat);
+          }
+        }
+      });
+
+      setFilterUserList(result);
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [search, personChatList]);
 
   useEffect(() => {
     activeChatIdRef.current = activeChatId;
@@ -81,9 +113,9 @@ export default function ChatPage() {
     activeChatRef.current = activeChat;
   }, [activeChat]);
 
-  useEffect(()=>{
+  useEffect(() => {
     Dispatch(SetActiveChatId(activeChatId));
-  },[activeChatId])
+  }, [activeChatId]);
 
   useEffect(() => {
     socket.emit("onlineUsers", (users: string[]) => {
@@ -103,9 +135,8 @@ export default function ChatPage() {
 
     socket.on("newMessage", handleNewMessage);
 
-
     return () => {
-      socket.off("newMessage", handleNewMessage);
+      socket.off("newMessage");
       socket.off("onlineUsers");
       socket.off("userOnline");
       socket.off("userOffline");
@@ -225,8 +256,7 @@ export default function ChatPage() {
             );
           }
         })
-        .catch((err) => console.log(err) 
-        );
+        .catch((err) => console.log(err));
     }
   }
 
@@ -339,6 +369,8 @@ export default function ChatPage() {
             type="text"
             className="outline-0 ms-2 w-full bg-transparent"
             placeholder="Search by name..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
@@ -346,51 +378,53 @@ export default function ChatPage() {
           <SidebarEmptyState />
         ) : (
           <div className="personBoxList flex flex-col gap-1 mt-4 overflow-y-auto flex-1 min-h-0">
-            {personChatList.map((data, index) => (
-              <PersonBox
-                key={index}
-                name={data.isGroup ? data.groupName : data.name[0]}
-                picture={data.isGroup ? "/groupPic.jpg" : data.picture}
-                preview={data.preview}
-                isGroup={data.isGroup}
-                lastMessageAt={data.lastMessageTime}
-                unreadCount={data.unreadCount}
-                online={data?.onlineStatus}
-                onClick={() => {
-                  selectedChat(data.chatId, data.unreadCount);
-                  // console.log("user set Data :- ");
-                  // console.log(data);
-                  if (!data.isGroup) {
-                    setIsGroupChat(false);
-                    setActiveChatStatus(data?.onlineStatus);
-                    setActiveChatUser({
-                      id: data.UserId[0],
-                      name: data.name,
-                      picture: data.picture,
-                    });
-                    // console.log("active Chat (!isGroup) :- ", {
-                    //   name: data.name,
-                    //   userId,
-                    //   sendId: data.UserId[0],
-                    //   chatId: data.chatId,
-                    // });
-                  } else {
-                    setIsGroupChat(true);
-                    setActiveChatUser({
-                      groupName: data.groupName,
-                      name: data.name,
-                      picture: "/groupPic.jpg",
-                    });
-                    // console.log("active Chat (isGroup) :- ", {
-                    //   groupName: data.groupName,
-                    //   name: data.name,
-                    //   picture: "/groupPic.jpg",
-                    // });
-                  }
-                  socket.emit("activeChat", { userId, chatId: data.chatId });
-                }}
-              />
-            ))}
+            {(search.trim() === "" ? personChatList : filterUserList).map(
+              (data, index) => (
+                <PersonBox
+                  key={index}
+                  name={data.isGroup ? data.groupName : data.name[0]}
+                  picture={data.isGroup ? "/groupPic.jpg" : data.picture}
+                  preview={data.preview}
+                  isGroup={data.isGroup}
+                  lastMessageAt={data.lastMessageTime}
+                  unreadCount={data.unreadCount}
+                  online={data?.onlineStatus}
+                  onClick={() => {
+                    selectedChat(data.chatId, data.unreadCount);
+                    // console.log("user set Data :- ");
+                    // console.log(data);
+                    if (!data.isGroup) {
+                      setIsGroupChat(false);
+                      setActiveChatStatus(data?.onlineStatus);
+                      setActiveChatUser({
+                        id: data.UserId[0],
+                        name: data.name,
+                        picture: data.picture,
+                      });
+                      // console.log("active Chat (!isGroup) :- ", {
+                      //   name: data.name,
+                      //   userId,
+                      //   sendId: data.UserId[0],
+                      //   chatId: data.chatId,
+                      // });
+                    } else {
+                      setIsGroupChat(true);
+                      setActiveChatUser({
+                        groupName: data.groupName,
+                        name: data.name,
+                        picture: "/groupPic.jpg",
+                      });
+                      // console.log("active Chat (isGroup) :- ", {
+                      //   groupName: data.groupName,
+                      //   name: data.name,
+                      //   picture: "/groupPic.jpg",
+                      // });
+                    }
+                    socket.emit("activeChat", { userId, chatId: data.chatId });
+                  }}
+                />
+              ),
+            )}
           </div>
         )}
       </aside>

@@ -13,7 +13,6 @@ interface ActiveUser {
 let activeUser: ActiveUser = {};
 
 export default function initializeSocket(io: Server) {
-  
   io.use((socket, next) => {
     console.log("A user is trying to connect");
     const { id, name, email } = socket.handshake.auth;
@@ -51,22 +50,21 @@ export default function initializeSocket(io: Server) {
       const senderId: string = Object.keys(activeUser).find(
         (id) => activeUser[id].socketId == socket.id,
       ) as string;
+      if (!senderId) {
+        console.log("Sender not found for socket:", socket.id);
+        return;
+      }
       for (const userId of userList) {
         if (userId in activeUser) {
-          console.log(
-            "send message to other : ",
-            userId.socketId,
-            chatId,
-            sendMessage,
-          );
-          io.to(userId.socketId).emit("newMessage", { chatId, sendMessage });
+          const socketId = activeUser[userId].socketId;
+          io.to(socketId).emit("newMessage", { chatId, sendMessage });
         } else {
           console.log("user not found");
         }
         const activeStatus: boolean =
           activeUser[userId]?.activeChatId == chatId ? true : false;
         console.log({ senderId, userId, sendMessage, activeStatus });
-        updateUserMessage(senderId, userId, sendMessage, activeStatus,chatId);
+        updateUserMessage(senderId, userId, sendMessage, activeStatus, chatId);
       }
     });
     socket.on(
@@ -94,7 +92,13 @@ export default function initializeSocket(io: Server) {
           const activeStatus: boolean =
             activeUser[userId]?.activeChatId == chatId ? true : false;
           console.log({ senderId, userId, sendMessage, activeStatus });
-          updateUserMessage(senderId, userId, sendMessage, activeStatus,chatId);
+          updateUserMessage(
+            senderId,
+            userId,
+            sendMessage,
+            activeStatus,
+            chatId,
+          );
         }
       },
     );
@@ -104,7 +108,7 @@ export default function initializeSocket(io: Server) {
     });
 
     socket.on("newContactAdd", ({ userId, data }) => {
-      console.log({ userId, data }, userId.socketId);
+      console.log({ userId, data }, activeUser[userId]?.socketId);
       io.to(activeUser[userId]?.socketId).emit("newContact", data);
     });
 

@@ -16,7 +16,13 @@ interface Users {
   userId: string;
 }
 
-export default function Message({ chatData, users }: { chatData: MessagePropr[], users:Users[] }) {
+export default function Message({
+  chatData,
+  users,
+}: {
+  chatData: MessagePropr[];
+  users: Users[];
+}) {
   const userId: string | NullExpression = useSelector(
     (state: RootState) => state.user.id,
   );
@@ -24,7 +30,7 @@ export default function Message({ chatData, users }: { chatData: MessagePropr[],
   return (
     <>
       {chatData.map((data, index) => {
-        const sender = users.find(user => user.userId === data.sender);
+        const sender = users.find((user) => user.userId === data.sender);
         return (
           <div
             key={index}
@@ -32,11 +38,19 @@ export default function Message({ chatData, users }: { chatData: MessagePropr[],
           >
             {data.sender != userId && (
               <div
-                className={`messageAvatar rounded-full bg-cover bg-center ${((index+1==chatData.length)? false : (chatData[index + 1]?.sender != userId)) && "invisible"} `}
-                style={{
-                  backgroundImage: `url(${sender?.picture})`,
-                }}
+                className={`messageAvatar rounded-full bg-bg-surface border border-[var(--border-subtle)] flex items-center justify-center text-text-secondary overflow-hidden shrink-0 ${(index + 1 == chatData.length ? false : chatData[index + 1]?.sender != userId) && "invisible"} `}
               >
+                {sender?.picture ? (
+                  <img
+                    src={sender.picture}
+                    alt={sender.name || "Sender"}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-[10px] font-bold uppercase">
+                    {sender?.name ? sender.name[0] : "?"}
+                  </span>
+                )}
               </div>
             )}
             <div

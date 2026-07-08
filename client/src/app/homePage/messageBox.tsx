@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { addNewUser } from "@/redux/userSlice";
 import axios from "axios";
 import { socket } from "@/lib/socket";
+import { showNotification } from "@/redux/notificationSlice";
 
 export default function MessageBox() {
   const enterID = useRef<HTMLInputElement | null>(null);
@@ -20,10 +21,39 @@ export default function MessageBox() {
   async function formHandler(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!enterID.current) return;
-    const enterUserId = enterID.current.value,
-      userExist = userContacts.find((data) => data.userId == enterUserId);
+    const enterUserId = enterID.current.value;
     // console.log("check user in list :- ", userExist);
-    if (userId == enterUserId || userExist?.userId == enterUserId) return;
+    if (!enterUserId) {
+      Dispatch(
+        showNotification({
+          message: "Please enter a person ID",
+          type: "error",
+        }),
+      );
+      return;
+    }
+
+    if (userId == enterUserId) {
+      Dispatch(
+        showNotification({
+          message: "You can't add yourself as a contact",
+          type: "error",
+        }),
+      );
+      return;
+    }
+
+    const userExist = userContacts.find((data) => data.userId == enterUserId);
+    if (userExist?.userId == enterUserId) {
+      Dispatch(
+        showNotification({
+          message: "This contact has already been added",
+          type: "info",
+        }),
+      );
+      return;
+    }
+
     const res = await axios.post("/api/chat/userAdd", {
       userId,
       userName,
@@ -38,11 +68,23 @@ export default function MessageBox() {
         userId: res.data.addUserId,
         data: res.data.addedUserData,
       });
+      Dispatch(
+        showNotification({
+          message: "Contact added successfully",
+          type: "success",
+        }),
+      );
+      enterID.current.value = "";
     } else {
       // console.log(res.data.message);
+      Dispatch(
+        showNotification({
+          message: res.data.message || "Couldn't find that user ID",
+          type: "error",
+        }),
+      );
     }
   }
-
   return (
     <div className="message-box-bg px-7 py-[26px] rounded-xl border border-[var(--border-subtle)] flex flex-col text-text-secondary">
       <div className="flex items-center justify-between gap-3">

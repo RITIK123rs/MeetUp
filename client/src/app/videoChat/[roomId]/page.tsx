@@ -19,6 +19,7 @@ import {
 import { MdScreenShare, MdStopScreenShare } from "react-icons/md";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/redux/store";
+import { useRouter } from "next/navigation";
 import { videoChatSocket } from "@/lib/socket";
 import {
   newUserAdded,
@@ -28,9 +29,12 @@ import {
   setUserMic,
   setUserCamera,
   setUserScreenSharing,
+  userLeft,
+  clearVideoChat,
 } from "@/redux/videoChatSlice";
 import "@/style/videoChat.css";
 import * as mediasoupClient from "mediasoup-client";
+import { showNotification } from "@/redux/notificationSlice";
 
 type Participant = {
   name: string;
@@ -76,6 +80,7 @@ type UserStreams = {
 };
 
 export default function VideoChat() {
+  const Router = useRouter();
   const {
     id,
     name,
@@ -115,18 +120,44 @@ export default function VideoChat() {
       Object.values(participants).some((p) => p.screenSharing));
 
   useEffect(() => {
+    if (!id) {
+      const stored = sessionStorage.getItem("user");
+      if (!stored) {
+        Router.replace("/");
+      } else {
+        Router.replace("/homePage");
+      }
+      return;
+    }
+
     videoChatSocket.on("newUserJoin", (userId, user) => {
       console.log("newUserJoin");
       Dispatch(newUserAdded({ userId, user }));
+      Dispatch(
+        showNotification({
+          message: `${user?.name ?? "Someone"} joined the call`,
+          type: "info",
+        }),
+      );
     });
 
     videoChatSocket.on("receiveMessage", (message) => {
       setMessages((prev) => [...prev, message]);
     });
 
+    videoChatSocket.on("connect_error", () => {
+      Dispatch(
+        showNotification({
+          message: "Connection lost. Trying to reconnect...",
+          type: "error",
+        }),
+      );
+    });
+
     return () => {
       videoChatSocket.off("newUserJoin");
       videoChatSocket.off("receiveMessage");
+      videoChatSocket.off("connect_error");
     };
   }, []);
 
@@ -278,6 +309,12 @@ export default function VideoChat() {
           await consume(producerId, source === "screen" ? true : false);
         } catch (err) {
           console.error("Failed to consume producer", producerId, err);
+          Dispatch(
+            showNotification({
+              message: "Couldn't load a participant's stream",
+              type: "error",
+            }),
+          );
         }
       }
     }
@@ -322,10 +359,49 @@ export default function VideoChat() {
       bump();
     });
 
+    videoChatSocket.on(
+      "userLeft",
+      (userId: string, producerIds: string[], userName: string) => {
+        const userStreams = streamListRef.current[userId];
+        producerIds.forEach((producerId) => {
+          const entry = consumersRef.current[producerId];
+          if (entry) {
+            entry.consumer.track.stop();
+            entry.consumer.close();
+            entry.transport.close();
+            delete consumersRef.current[producerId];
+          }
+        });
+        userStreams.camera?.getTracks().forEach((track) => track.stop());
+        userStreams.screen?.getTracks().forEach((track) => track.stop());
+        Dispatch(userLeft({ userId }));
+        Dispatch(
+          showNotification({
+            message: `${userName} left the call`,
+            type: "info",
+          }),
+        );
+        bump();
+      },
+    );
+
+    const handleTabClose = () => {
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      screenStreamRef.current?.getTracks().forEach((track) => track.stop());
+      if (videoChatSocket.connected) {
+        videoChatSocket.disconnect();
+      }
+      Dispatch(clearVideoChat());
+    };
+
+    window.addEventListener("pagehide", handleTabClose);
+
     return () => {
       videoChatSocket.off("newProducer");
       videoChatSocket.off("producerStateChanged");
       videoChatSocket.off("producerClosed");
+      videoChatSocket.off("userLeft");
+      window.removeEventListener("pagehide", handleTabClose);
     };
   }, []);
 
@@ -403,6 +479,35 @@ export default function VideoChat() {
 
     Dispatch(clickOnScreenShare());
     bump();
+  }
+
+  async function EndCall() {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    screenStreamRef.current?.getTracks().forEach((track) => track.stop());
+    screenStreamRef.current = null;
+    videoProducerRef.current?.close();
+    videoProducerRef.current = null;
+    audioProducerRef.current?.close();
+    audioProducerRef.current = null;
+    screenProducerRef.current?.close();
+    screenProducerRef.current = null;
+    Object.values(consumersRef.current).forEach(({ consumer, transport }) => {
+      consumer.track?.stop();
+      consumer.close();
+      transport.close();
+    });
+    consumersRef.current = {};
+    sendTransportRef.current?.close();
+    sendTransportRef.current = null;
+    deviceRef.current = null;
+    streamListRef.current = {};
+    setMessages([]);
+    if (videoChatSocket.connected) {
+      videoChatSocket.disconnect();
+    }
+    Dispatch(clearVideoChat());
+    Router.push("/homePage");
   }
 
   const renderScreenTile = (
@@ -607,8 +712,7 @@ export default function VideoChat() {
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter"){
-                    e.preventDefault();
+                  if (e.key === "Enter") {
                     handleSendMessage();
                   }
                 }}
@@ -777,7 +881,7 @@ export default function VideoChat() {
         <button
           type="button"
           className="videoCallEndBtn"
-          // onClick={onEndCall}
+          onClick={EndCall}
           aria-label="End call"
         >
           <IoCall className="text-xl rotate-[135deg]" />

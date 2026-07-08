@@ -156,8 +156,10 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
     });
 
     socket.on("createSendTransport", async (callBack) => {
+      const peer = peers[socket.id];
+      if (!peer) return callBack(null);
       const transport = await createTransport();
-      peers[socket.id].sendTransport = transport;
+      peer.sendTransport = transport;
       callBack({
         id: transport.id,
         iceParameters: transport.iceParameters,
@@ -176,6 +178,7 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
 
     socket.on("produce", async ({ kind, rtpParameters, appData }, callback) => {
       const peer = peers[socket.id];
+      if (!peer) return callback();
       let producer: mediasoup.types.Producer;
       if (!peer.sendTransport) return callback();
 
@@ -216,22 +219,10 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
     });
 
     socket.on("createRecvTransport", async (callback) => {
-      const transport = await createTransport();
       const peer = peers[socket.id];
-      peer.recvTransports[transport.id] = transport;
-      callback({
-        id: transport.id,
-        iceParameters: transport.iceParameters,
-        iceCandidates: transport.iceCandidates,
-        dtlsParameters: transport.dtlsParameters,
-      });
-    });
-
-    socket.on("createRecvTransport", async (callback) => {
+      if (!peer) return callback();
       const transport = await createTransport();
-      const peer = peers[socket.id];
       peer.recvTransports[transport.id] = transport;
-
       callback({
         id: transport.id,
         iceParameters: transport.iceParameters,
@@ -244,7 +235,9 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
       "connectRecvTransport",
       async ({ transportId, dtlsParameters }, callback) => {
         const peer = peers[socket.id];
+        if (!peer) return callback();
         const transport = peer.recvTransports[transportId];
+        if (!transport) return callback();
         await transport.connect({ dtlsParameters });
         callback();
       },
@@ -254,8 +247,9 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
       "consume",
       async ({ producerId, transportId, rtpCapabilities }, callback) => {
         const peer = peers[socket.id];
+        if (!peer) return callback(null);
         const transport = peer.recvTransports[transportId];
-
+        if (!transport) return callback(null);
         const consumer = await transport.consume({
           producerId,
           rtpCapabilities,
@@ -276,6 +270,7 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
 
     socket.on("resumeConsumer", async ({ consumerId }, callBack) => {
       const peer = peers[socket.id];
+      if (!peer) return callBack();
       const consumer = peer.consumers.find((c) => c.id === consumerId);
       if (!consumer) {
         console.log("Consumer not found");
@@ -288,6 +283,7 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
 
     socket.on("pauseProducer", async ({ producerId }, callback) => {
       const peer = peers[socket.id];
+      if (!peer) return callback();
       const producer = peer?.producers.find((p) => p.id === producerId);
       if (producer) {
         await producer.pause();
@@ -308,6 +304,7 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
 
     socket.on("resumeProducer", async ({ producerId }, callback) => {
       const peer = peers[socket.id];
+      if (!peer) return callback();
       const producer = peer?.producers.find((p) => p.id === producerId);
       if (producer) {
         await producer.resume();
@@ -324,18 +321,6 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
         });
       }
       callback();
-    });
-
-    socket.on("getProducers", (callback) => {
-      const producers = [];
-      for (const [peerId, peer] of Object.entries(peers)) {
-        if (peerId !== socket.id) {
-          for (const producer of peer.producers) {
-            producers.push({ producerId: producer.id });
-          }
-        }
-      }
-      callback(producers);
     });
 
     socket.on("closeProducer", ({ producerId }, callback) => {
@@ -369,17 +354,24 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
       callback();
     });
 
-    socket.on("sendMessage", (message,userId)=>{
-      const roomId = users[userId].roomId;
-      if(!roomId) return;
-      socket.to(roomId).emit("receiveMessage",message);
-    })
+    socket.on("sendMessage", (message, userId) => {
+      const user = users[userId];
+      if (!user) return; 
+      const roomId = user.roomId;
+      if (!roomId) return;
+      socket.to(roomId).emit("receiveMessage", message);
+    });
 
     socket.on("disconnect", () => {
       console.log("videoChat User Disconnected :- ", socket.id);
-      const userId: string = Object.keys(users).find(
-        (id) => users[id].socketId == socket.id,
-      ) as string;
+      const peer = peers[socket.id];
+      if (!peer) return;
+      const userId = peer.userId;
+      const user = users[userId];
+      if (!user) {
+        delete peers[socket.id];
+        return;
+      }
       console.log(userId);
       if (!userId) return;
       const RoomId: string = users[userId].roomId as string;
@@ -387,11 +379,37 @@ export default async function initializeVideoCallSocket(videoChat: Namespace) {
         (id: string) => id === userId,
       );
       socket.leave(RoomId);
-      if (userIndex !== -1) {
+      if (RoomId && rooms[RoomId] && userIndex !== -1 && userIndex !== undefined) {
         rooms[RoomId].userId.splice(userIndex, 1);
         rooms[RoomId].userNo -= 1;
       }
+      const userName = users[userId].name;
       delete users[userId];
+      let ProducerIds = [];
+      for (const producer of peer.producers) {
+        const source = producer.appData.source;
+        producer.close();
+        ProducerIds.push(producer.id);
+        delete producerOwners[producer.id];
+        if (RoomId) {
+          socket.to(RoomId).emit("producerClosed", {
+            producerId: producer.id,
+            source,
+            userId,
+          });
+        }
+      }
+      peer.producers = [];
+      socket.to(RoomId).emit("userLeft", userId, ProducerIds, userName);
+      for (const consumer of peer.consumers) {
+        consumer.close();
+      }
+      peer.consumers = [];
+      peer.sendTransport?.close();
+      for (const transport of Object.values(peer.recvTransports)) {
+        transport.close();
+      }
+      socket.leave(RoomId);
     });
   });
 }

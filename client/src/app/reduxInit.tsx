@@ -8,7 +8,7 @@ export default function ReduxInit({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
+    const savedUser = sessionStorage.getItem("user");
 
     //console.log(savedUser);
 

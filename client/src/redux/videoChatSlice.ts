@@ -101,6 +101,14 @@ const videoChatSlice = createSlice({
           !state.joinUser[state.id].screenSharing;
       }
     },
+    userLeft: (state, action) => {
+      state.UserNo -= 1;
+      const { userId } = action.payload;
+      if (state.joinUser[userId]) {
+        delete state.joinUser[userId];
+      }
+    },
+    clearVideoChat: () => initialState,
   },
 });
 
@@ -114,5 +122,7 @@ export const {
   setUserMic,
   setUserCamera,
   setUserScreenSharing,
+  userLeft,
+  clearVideoChat,
 } = videoChatSlice.actions;
 export default videoChatSlice.reducer;

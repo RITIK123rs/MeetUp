@@ -14,6 +14,7 @@ import "../style/loginPage.css";
 import { useState, useEffect } from "react";
 import { socket } from "@/lib/socket";
 import { RootState } from "@/redux/store";
+import { showNotification } from "@/redux/notificationSlice";
 
 interface LoginData {
   email: string;
@@ -75,7 +76,7 @@ export default function LoginPage() {
     const userData: UserData = response.data;
 
     if (userData.success) {
-      localStorage.setItem("user", JSON.stringify(userData));
+      sessionStorage.setItem("user", JSON.stringify(userData));
       Dispatch(setUser(userData));
       // console.log("login socket.io");
       socket.disconnect();
@@ -88,6 +89,7 @@ export default function LoginPage() {
       router.push("/homePage");
     } else {
       // console.log("Login Failed");
+      Dispatch(showNotification({ message: "Invalid email or password", type: "error" }));
     }
   }
 
@@ -101,7 +103,7 @@ export default function LoginPage() {
       );
 
       if (userData.success) {
-        localStorage.setItem("user", JSON.stringify(userData));
+        sessionStorage.setItem("user", JSON.stringify(userData));
         Dispatch(setUser(userData));
         // console.log("login socket.io");
         socket.disconnect();
@@ -113,11 +115,11 @@ export default function LoginPage() {
         socket.connect();
         router.push("/homePage");
       } else {
-        // console.log("Google Login Failed");
+        Dispatch(showNotification({ message: "Google sign-in failed. Please try again.", type: "error" }));
       }
     },
     onError: () => {
-      // console.log("Google Login Failed");
+      Dispatch(showNotification({ message: "Google sign-in failed. Please try again.", type: "error" }));
     },
   });
 

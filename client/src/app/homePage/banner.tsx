@@ -153,11 +153,10 @@ export default function Banner() {
         </div>
 
         <div className="flex items-center gap-3.5 px-[18px] py-3 rounded-lg border border-[var(--border-subtle)] bg-bg-elevated shrink-0 w-[390px]">
-          <div
-            className="w-[52px] h-[52px] rounded-full bg-cover bg-center "
-            style={{
-              backgroundImage: `url(${userData?.picture})`
-            }}
+          <img
+            src={userData?.picture ?? "/default.jpg" }
+            alt={userData?.name ?? "User avatar"}
+            className="w-[52px] h-[52px] rounded-full object-cover shrink-0"
           />
           <div className="flex-1 min-w-0">
             <h2 className="text-base font-semibold text-text-primary">

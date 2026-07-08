@@ -37,7 +37,7 @@ export default function PersonBox({
               backgroundImage: `url(${picture})`,
             }} />
         { !isGroup && online && (
-          <span className="online-dot absolute w-2.5 h-2.5 bottom-0 right-0 rounded-full bg-green-500" />
+          <span className="online-dot absolute w-2.5 h-2.5 bottom-0 right-0 rounded-full bg-green-500 z-10" />
         )}
       </div>
       <div className="flex flex-col min-w-0 flex-1">

@@ -15,7 +15,13 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/redux/store";
 import { useRouter } from "next/navigation";
 import { socket } from "@/lib/socket";
-import { addNewUser, addNewGroup, updateUnReadMessage } from "@/redux/userSlice";
+import { showNotification } from "@/redux/notificationSlice";
+import {
+  addNewUser,
+  addNewGroup,
+  updateUnReadMessage,
+  clearUser,
+} from "@/redux/userSlice";
 
 const menuBtnBase: string =
   "w-12 h-12 flex rounded-xl items-center justify-center text-text-secondary transition-colors duration-150 hover:bg-[var(--bg-hover)] hover:text-text-primary";
@@ -45,9 +51,9 @@ export default function homePage() {
   )!;
 
   useEffect(() => {
-    const stored = localStorage.getItem("user");
+    const stored = sessionStorage.getItem("user");
     if (!stored) {
-      router.push("/");
+      router.replace("/");
       return;
     }
 
@@ -56,7 +62,21 @@ export default function homePage() {
       return;
     }
 
-    const userData = JSON.parse(stored);
+    let userData;
+
+    try {
+      userData = JSON.parse(stored);
+    } catch {
+      sessionStorage.removeItem("user");
+      router.replace("/");
+      return;
+    }
+
+    if (!userData || !userData.id) {
+      sessionStorage.removeItem("user");
+      router.replace("/");
+      return;
+    }
 
     socket.auth = {
       id: userData.id,
@@ -65,28 +85,45 @@ export default function homePage() {
     };
     socket.connect();
 
-    socket.on("newMessage", ({chatId,
-    senderId,
-    message})=>{
-      console.log("updateUnReadMessage",{chatId,
-    senderId,
-    message});
+    socket.on("newMessage", ({ chatId, senderId, message }) => {
+      console.log("updateUnReadMessage", { chatId, senderId, message });
       Dispatch(
         updateUnReadMessage({
           message,
           chatId,
         }),
       );
-    } );
+    });
 
     socket.on("newContact", (data) => {
       // console.log("newContact :- ", data);
       Dispatch(addNewUser(data));
+      Dispatch(
+        showNotification({
+          message: `${data?.name ?? "Someone"} added you as a contact`,
+          type: "info",
+        }),
+      );
+    });
+
+    socket.on("connect_error", () => {
+      Dispatch(
+        showNotification({
+          message: "Connection lost. Trying to reconnect...",
+          type: "error",
+        }),
+      );
     });
 
     socket.on("newGroupAdd", (chat) => {
       // console.log("Received NewGroup:", chat);
       Dispatch(addNewGroup(chat));
+      Dispatch(
+        showNotification({
+          message: "You were added to a new group",
+          type: "info",
+        }),
+      );
     });
 
     return () => {
@@ -94,8 +131,21 @@ export default function homePage() {
       socket.off("newMessage");
       socket.off("newContact");
       socket.off("newGroupAdd");
+      socket.off("connect_error");
     };
   }, []);
+
+  function handleLogOut() {
+    if (socket.connected) {
+      socket.disconnect();
+    }
+    sessionStorage.removeItem("user");
+    Dispatch(clearUser());
+    Dispatch(
+      showNotification({ message: "You've been logged out", type: "success" }),
+    );
+    router.replace("/");
+  }
 
   return (
     <div className="bg-bg-base w-screen h-screen flex">
@@ -130,14 +180,14 @@ export default function homePage() {
           <button
             className="text-text-muted rounded-sm w-9 h-9 flex items-center justify-center hover:bg-[var(--bg-hover)] hover:text-text-secondary"
             title="Logout"
+            onClick={handleLogOut}
           >
             <MdOutlineLogout className="text-xl" />
           </button>
-          <div
-            className="w-11 h-11 rounded-full bg-cover bg-center "
-            style={{
-              backgroundImage: `url(${userPicture})`,
-            }}
+          <img
+            src={userPicture ?? "/default.jpg" }
+            alt="User avatar"
+            className="w-11 h-11 rounded-full object-cover"
           />
         </div>
       </aside>
