@@ -2,7 +2,6 @@
   display: none !important;
 }
 
-/* Drawer Slide-in Animation */
 @keyframes slideIn {
   from {
     transform: translateX(100%);
@@ -16,16 +15,12 @@
   animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Hide Hamburger Menu on Desktop */
 @media (min-width: 1101px) {
   .mobile-menu-btn {
     display: none !important;
   }
 }
 
-/* ==========================================================================
-   Header: Participant Count pill (avatar stack + text together)
-   ========================================================================== */
 .videoCall-userCount {
   display: flex !important;
   align-items: center !important;
@@ -45,9 +40,6 @@
   line-height: 1 !important;
 }
 
-/* ==========================================================================
-   Header Avatar Stack (first two participants shown as overlapping circles)
-   ========================================================================== */
 .videoCall-avatarStack {
   display: flex !important;
   align-items: center !important;
@@ -89,9 +81,6 @@
   color: #fff !important;
 }
 
-/* ==========================================================================
-   Video Grid Scroll (kicks in when there are more tiles than fit the view)
-   ========================================================================== */
 .videoCallGrid {
   overflow-y: auto !important;
   max-height: 100% !important;
@@ -116,9 +105,6 @@
   background-color: var(--accent-violet, rgba(139, 92, 246, 0.7)) !important;
 }
 
-/* ==========================================================================
-   Bigger Avatar Circles in Grid Tiles (scaled by screen size)
-   ========================================================================== */
 @media (min-width: 1400px) {
   .videoTile-grid .videoTile-avatarCircle {
     width: 100px !important;
@@ -149,27 +135,51 @@
   }
 }
 
-/* ==========================================================================
-   Desktop and Tablet Transitions (Screens <= 1100px)
-   ========================================================================== */
 @media (max-width: 1100px) {
-  /* Show mobile header bar at top-left */
   .mobile-header {
     display: flex !important;
   }
 
-  /* Hide the vertical side navigation bar */
   aside {
     display: none !important;
   }
 
-  /* Make main container span the full height/width and enable scrolling */
+  .chatPage .chatSidebar {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    border-right: none !important;
+  }
+
+  .chatPage .chatMain {
+    display: none !important;
+  }
+
+  .chatPage.has-active-chat .chatSidebar {
+    display: none !important;
+  }
+
+  .chatPage.has-active-chat .chatMain {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .chat-back-btn {
+    display: flex !important;
+  }
+
+  .chat-sidebar-menu-btn {
+    display: flex !important;
+  }
+
   main {
     height: 100vh !important;
     overflow: hidden !important;
   }
 
-  /* Enable scrolling on the homepage content container */
   .homepage-main-container {
     overflow-y: auto !important;
     height: 100% !important;
@@ -180,17 +190,11 @@
     padding-bottom: 24px !important;
   }
 
-  /* Remove internal scrolling from MessageBox and VideoBox */
   .message-box-bg,
   .video-box-bg {
     overflow: visible !important;
   }
 
-  /* ==========================================
-     Banner Restructuring
-     ========================================== */
-
-  /* Make Banner a CSS Grid container */
   .banner-bg {
     display: grid !important;
     grid-template-columns: 1fr !important;
@@ -198,21 +202,14 @@
     padding: 20px !important;
   }
 
-  /* Remove timer/clock */
   .banner-row-1 > div:last-child {
     display: none !important;
   }
 
-  /* Use display contents to flatten row-2 layout so we can order elements */
   .banner-row-2 {
     display: contents !important;
   }
 
-  /* Order of Banner Elements:
-     1. Greeting
-     2. Profile Card
-     3. Stats Cards
-  */
   .banner-row-1 {
     order: 1 !important;
   }
@@ -223,7 +220,6 @@
     max-width: 100% !important;
   }
 
-  /* Stats cards grids below 1100px: 3 cols together */
   .banner-stats-container {
     order: 3 !important;
     width: 100% !important;
@@ -240,11 +236,6 @@
   }
 }
 
-/* ==========================================================================
-   Homepage Scroll Styling (Screens <= 1000px)
-   Adds a visible, styled scrollbar on the side of the homepage content
-   instead of relying on the browser default.
-   ========================================================================== */
 @media (max-width: 1000px) {
   .homepage-main-container {
     overflow-y: scroll !important;
@@ -271,10 +262,6 @@
   }
 }
 
-/* ==========================================================================
-   Homepage Cards Stack (Screens <= 760px)
-   Stacks MessageBox / VideoBox above-below each other using flexbox.
-   ========================================================================== */
 @media (max-width: 760px) {
   .homepage-main-container .home-cards-scroll {
     display: flex !important;
@@ -298,7 +285,6 @@
 }
 
 @media (max-width: 768px) {
-  /* Show only the sidebar (list of persons) by default in ChatPage */
   .chatPage .chatSidebar {
     width: 100% !important;
     min-width: 100% !important;
@@ -311,7 +297,6 @@
     display: none !important;
   }
 
-  /* Show only active chat pane when a chat is open */
   .chatPage.has-active-chat .chatSidebar {
     display: none !important;
   }
@@ -323,16 +308,11 @@
     max-width: 100% !important;
   }
 
-  /* Adjust homepage padding on smaller screens */
   .homepage-main-container {
     padding-left: 12px !important;
     padding-right: 12px !important;
     padding-top: 16px !important;
   }
-
-  /* ==========================================
-     Video Chat Responsiveness
-     ========================================== */
 
   .videoCallHeader {
     padding: 10px 14px !important;
@@ -371,7 +351,6 @@
     font-size: 1.9rem !important;
   }
 
-  /* Fixed overlays for Chat & Participants list panels on call */
   .videoCallSidePanel {
     position: fixed !important;
     top: 0 !important;
@@ -384,7 +363,6 @@
     box-shadow: -4px 0 24px rgba(0, 0, 0, 0.5) !important;
   }
 
-  /* Controls padding and button scaling */
   .videoCallControls {
     padding: 14px 10px !important;
     gap: 10px !important;
@@ -402,7 +380,6 @@
     height: 48px !important;
   }
 
-  /* Keep non-text (emoji-only) message bubbles big on tablet */
   .chatPage .messageBubble.emojiBubble {
     font-size: 2.6rem !important;
     padding: 4px 6px !important;
@@ -431,11 +408,7 @@
   }
 }
 
-/* ==========================================================================
-   Mobile-specific Details (Screens <= 650px)
-   ========================================================================== */
 @media (max-width: 650px) {
-  /* 2 above, 1 below centered, taking equal width as columns */
   .banner-stats-container {
     grid-template-columns: repeat(2, 1fr) !important;
   }
@@ -452,11 +425,7 @@
   }
 }
 
-/* ==========================================================================
-   Mobile-specific Details (Screens <= 600px)
-   ========================================================================== */
 @media (max-width: 600px) {
-  /* Compact the active Chat Header */
   .chatPage .chatHeader {
     min-height: 56px !important;
     padding: 6px 12px !important;
@@ -479,7 +448,6 @@
     font-size: 0.72rem !important;
   }
 
-  /* Make chat bubbles fill more space on mobile */
   .chatPage .messageRow {
     max-width: 90% !important;
     gap: 8px !important;
@@ -490,7 +458,6 @@
     font-size: 0.9rem !important;
   }
 
-  /* Compact the message input bar */
   .chatPage .messageInputBar {
     padding: 8px 12px !important;
     gap: 6px !important;
@@ -538,8 +505,6 @@
     font-size: 1.6rem !important;
   }
 
-  /* Keep non-text (emoji-only) message bubbles big on phone,
-     overriding the 0.9rem shrink above via higher selector specificity */
   .chatPage .messageBubble.emojiBubble {
     font-size: 3rem !important;
     padding: 4px 6px !important;
@@ -563,11 +528,7 @@
   }
 }
 
-/* ==========================================================================
-   Small Mobile Devices (Screens <= 400px and down to 171px)
-   ========================================================================== */
 @media (max-width: 400px) {
-  /* 3 in column layout (stacked vertically) */
   .banner-stats-container {
     grid-template-columns: 1fr !important;
     gap: 8px !important;
@@ -579,7 +540,6 @@
     width: 100% !important;
   }
 
-  /* Scale down the floating picture-in-picture video tile in calls */
   .videoTile-pip {
     width: 110px !important;
     height: 82px !important;
@@ -593,7 +553,6 @@
     height: 36px !important;
   }
 
-  /* Compact the video call header details */
   .videoCallHeader {
     padding: 6px 10px !important;
   }
@@ -634,7 +593,6 @@
     font-size: 1.3rem !important;
   }
 
-  /* Video controls size adjustments for tiny screens */
   .videoCallControls {
     gap: 6px !important;
     padding: 12px 6px !important;
@@ -657,7 +615,6 @@
     font-size: 1rem !important;
   }
 
-  /* Group Panel dialog improvements */
   .gp-overlay {
     padding: 12px 6px !important;
   }
@@ -670,7 +627,6 @@
     font-size: 1.15rem !important;
   }
 
-  /* Keep non-text (emoji-only) message bubbles big even on small phones */
   .chatPage .messageBubble.emojiBubble {
     font-size: 2.3rem !important;
     padding: 2px 4px !important;

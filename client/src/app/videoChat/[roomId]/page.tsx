@@ -116,7 +116,7 @@ export default function VideoChat() {
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const showGrid =
     totalUsers >= 3 ||
-    (totalUsers === 2 &&
+    (totalUsers < 3 &&
       Object.values(participants).some((p) => p.screenSharing));
 
   const cameraOnRef = useRef(cameraOn);
@@ -553,6 +553,12 @@ export default function VideoChat() {
     if (videoChatSocket.connected) {
       videoChatSocket.disconnect();
     }
+    Dispatch(
+      showNotification({
+        message: "Call ended successfully.",
+        type: "success",
+      }),
+    );
     Dispatch(clearVideoChat());
     Router.push("/homePage");
   }
@@ -723,7 +729,9 @@ export default function VideoChat() {
             totalUsers === 1 ? "one" : totalUsers === 2 ? "two" : "grid"
           }`}
         >
-          {totalUsers === 1 && renderTile(participants[id], id, true, "full")}
+          {totalUsers === 1 &&
+            !showGrid &&
+            renderTile(participants[id], id, true, "full")}
 
           {totalUsers === 2 &&
             !showGrid &&
