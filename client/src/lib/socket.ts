@@ -1,10 +1,12 @@
 
 import { io } from "socket.io-client";
 
-export const socket= io("http://localhost:5000",{
+const server_url = process.env.SERVER_URL!;
+
+export const socket = io(server_url, {
     autoConnect: false,
 });
 
-export const videoChatSocket= io("http://localhost:5000/videoChat",{
+export const videoChatSocket = io(`${server_url}/videoChat`, {
     autoConnect: false,
 });
