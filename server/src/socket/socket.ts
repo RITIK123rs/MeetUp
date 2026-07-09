@@ -14,9 +14,9 @@ let activeUser: ActiveUser = {};
 
 export default function initializeSocket(io: Server) {
   io.use((socket, next) => {
-    console.log("A user is trying to connect");
+    // console.log("A user is trying to connect");
     const { id, name, email } = socket.handshake.auth;
-    console.log(id, name, email);
+    // console.log(id, name, email);
 
     if (!id) return next(new Error("No user ID"));
 
@@ -32,66 +32,69 @@ export default function initializeSocket(io: Server) {
   });
 
   io.on("connection", (socket) => {
-    console.log("User Connected : ", socket.id);
-    console.log(activeUser, "user Id :- ", socket.data.userId);
+    // console.log("User Connected : ", socket.id);
+    // console.log(activeUser, "user Id :- ", socket.data.userId);
     socket.broadcast.emit("userOnline", socket.data.userId);
 
     socket.on("activeChat", ({ userId, chatId }) => {
       if (!activeUser[userId]) {
-        console.log("User not found:", userId);
+        // console.log("User not found:", userId);
         return;
       }
       activeUser[userId].activeChatId = chatId;
     });
 
     socket.on("newMessage-new", ({ userList, chatId, data, sendMessage }) => {
-      console.log(userList, chatId, data, sendMessage);
+      // console.log(userList, chatId, data, sendMessage);
       addMessage("new", chatId, data, sendMessage);
       const senderId: string = Object.keys(activeUser).find(
         (id) => activeUser[id].socketId == socket.id,
       ) as string;
       if (!senderId) {
-        console.log("Sender not found for socket:", socket.id);
+        // console.log("Sender not found for socket:", socket.id);
         return;
       }
       for (const userId of userList) {
         if (userId in activeUser) {
           const socketId = activeUser[userId].socketId;
-          io.to(socketId).emit("newMessage", { chatId, sendMessage });
+          io.to(socketId).emit("newMessage", {
+            chatId,
+            senderId,
+            message: sendMessage,
+          });
         } else {
-          console.log("user not found");
+          // console.log("user not found");
         }
-        const activeStatus: boolean =
-          activeUser[userId]?.activeChatId == chatId ? true : false;
-        console.log({ senderId, userId, sendMessage, activeStatus });
+        const activeStatus = activeUser[userId]?.activeChatId == chatId;
+        // console.log({ senderId, userId, sendMessage, activeStatus });
         updateUserMessage(senderId, userId, sendMessage, activeStatus, chatId);
       }
     });
     socket.on(
       "newMessage-existing",
       ({ userList, senderId, chatId, data, sendMessage }) => {
-        console.log(userList, chatId, data, sendMessage);
+        // console.log(userList, chatId, data, sendMessage);
         addMessage("existing", chatId, data, sendMessage);
         for (const userId of userList) {
           if (userId in activeUser) {
             const socketId = activeUser[userId].socketId;
-            console.log(
-              "send message to other : ",
-              socketId,
-              chatId,
-              sendMessage,
-            );
+            // console.log(
+            //   "send message to other : ",
+            //   socketId,
+            //   chatId,
+            //   sendMessage,
+            // );
             io.to(socketId).emit("newMessage", {
               chatId,
               senderId,
               message: sendMessage,
             });
           } else {
-            console.log("user not found");
+            // console.log("user not found");
           }
           const activeStatus: boolean =
             activeUser[userId]?.activeChatId == chatId ? true : false;
-          console.log({ senderId, userId, sendMessage, activeStatus });
+          // console.log({ senderId, userId, sendMessage, activeStatus });
           updateUserMessage(
             senderId,
             userId,
@@ -108,23 +111,30 @@ export default function initializeSocket(io: Server) {
     });
 
     socket.on("newContactAdd", ({ userId, data }) => {
-      console.log({ userId, data }, activeUser[userId]?.socketId);
-      io.to(activeUser[userId]?.socketId).emit("newContact", data);
+      const targetSocketId = activeUser[userId]?.socketId;
+      if (!targetSocketId) {
+        console.log(
+          `User ${userId} not connected, cannot push realtime update`,
+        );
+        return;
+      }
+      console.log("New Contact Add :-",userId);
+      io.to(targetSocketId).emit("newContact", data);
     });
 
     socket.on("NewGroup", (chats) => {
-      console.log("socket (NewGroup) :- ", chats);
+      // console.log("socket (NewGroup) :- ", chats);
       for (var userId of Object.keys(chats)) {
         const user = activeUser[userId];
         if (!user) continue;
-        console.log(activeUser);
-        console.log("socket userId :- ", user.socketId);
+        // console.log(activeUser);
+        // console.log("socket userId :- ", user.socketId);
         io.to(user.socketId).emit("newGroupAdd", chats[userId]);
       }
     });
 
     socket.on("disconnect", () => {
-      console.log("user Disconnected : ", socket.id);
+      // console.log("user Disconnected : ", socket.id);
       const userId: string = Object.keys(activeUser).find(
         (id) => activeUser[id].socketId == socket.id,
       ) as string;

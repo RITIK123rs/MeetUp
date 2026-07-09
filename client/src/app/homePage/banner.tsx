@@ -53,29 +53,34 @@ interface UserData {
 
 export default function Banner() {
   const userData: UserData = useSelector((state: any) => state.user);
-  const [now, setNow] = useState<Date>(new Date());
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
     // console.log(userData);
   }, [userData]);
 
   useEffect(() => {
+    setNow(new Date());
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const dateStr = now.toLocaleDateString("en-IN", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-  const timeStr = now.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
+  const dateStr = now
+    ? now.toLocaleDateString("en-IN", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "";
+  const timeStr = now
+    ? now.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      })
+    : "";
 
   const stats: Stat[] = [
     {
@@ -106,11 +111,11 @@ export default function Banner() {
 
   return (
     <section className="banner-bg shrink-0 flex flex-col gap-[10px] px-7 pt-[24px] pb-[12px] rounded-xl border border-[var(--border-subtle)]">
-      <div className="flex items-center justify-between gap-4">
+      <div className="banner-row-1 flex items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="text-[1.80rem] font-bold text-text-primary leading-tight">
             {getGreeting()},{" "}
-            <span className="bg-[image:var(--accent-gradient)] bg-clip-text text-transparent">
+            <span className="bg-[image:var(--accent-gradient)]  bg-clip-text text-transparent">
               {userData?.name}
             </span>
           </p>
@@ -128,8 +133,8 @@ export default function Banner() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-wrap gap-3.5 flex-1 min-w-0">
+      <div className="banner-row-2 flex items-center justify-between gap-4">
+        <div className="banner-stats-container flex flex-wrap gap-3.5 flex-1 min-w-0">
           {stats.map(({ label, value, icon: Icon, cardClass, iconClass }) => (
             <div
               key={label}
@@ -152,12 +157,23 @@ export default function Banner() {
           ))}
         </div>
 
-        <div className="flex items-center gap-3.5 px-[18px] py-3 rounded-lg border border-[var(--border-subtle)] bg-bg-elevated shrink-0 w-[390px]">
-          <img
-            src={userData?.picture ?? "/default.jpg" }
-            alt={userData?.name ?? "User avatar"}
-            className="w-[52px] h-[52px] rounded-full object-cover shrink-0"
-          />
+        <div className="banner-profile-card flex items-center gap-3.5 px-[18px] py-3 rounded-lg border border-[var(--border-subtle)] bg-bg-elevated shrink-0 w-[390px]">
+          <div className="w-[52px] h-[52px] rounded-full bg-bg-surface border border-[var(--border-subtle)] flex items-center justify-center text-text-secondary overflow-hidden shrink-0">
+            {userData?.picture ? (
+              <img
+                src={userData.picture}
+                alt={userData.name || "User"}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/userPic.jpg";
+                }}
+              />
+            ) : (
+              <span className="text-xl font-bold uppercase">
+                {userData?.name ? userData.name[0] : "?"}
+              </span>
+            )}
+          </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-base font-semibold text-text-primary">
               {userData?.name}

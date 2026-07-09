@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
         contacts: {
           name: userCheck.name,
           userId: new mongoose.Types.ObjectId(addUserId),
+          picture: userCheck.picture,
         },
         chats: {
           name: [userCheck.name],
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
           contacts: {
             name: userName,
             userId: new mongoose.Types.ObjectId(userId),
+            picture: userPicture,
           },
           chats: {
             name: [userName],
@@ -96,6 +98,7 @@ export async function POST(req: NextRequest) {
         addContact: {
           name: userCheck.name,
           userId: addUserId,
+          picture: userCheck.picture,
         },
         addChats: {
           name: userCheck.name,
@@ -107,11 +110,12 @@ export async function POST(req: NextRequest) {
           picture: userCheck.picture,
         },
       },
-      addUserId, 
+      addUserId,
       addedUserData: {
         addContact: {
           name: userName,
           userId: userId,
+          picture: userPicture,
         },
         addChats: {
           name: userName,

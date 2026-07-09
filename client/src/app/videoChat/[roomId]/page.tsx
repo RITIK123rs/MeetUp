@@ -119,6 +119,54 @@ export default function VideoChat() {
     (totalUsers === 2 &&
       Object.values(participants).some((p) => p.screenSharing));
 
+  const cameraOnRef = useRef(cameraOn);
+  const wasCameraOnBeforeHideRef = useRef(false);
+
+  useEffect(() => {
+    cameraOnRef.current = cameraOn;
+  }, [cameraOn]);
+
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === "hidden") {
+        const videoTrack = streamRef.current?.getVideoTracks()[0];
+        if (videoTrack && cameraOnRef.current) {
+          wasCameraOnBeforeHideRef.current = true;
+          videoTrack.enabled = false;
+          if (videoProducerRef.current) {
+            videoProducerRef.current.pause();
+            await emit("pauseProducer", {
+              producerId: videoProducerRef.current.id,
+            });
+          }
+          Dispatch(clickOnCamera());
+        }
+      } else if (document.visibilityState === "visible") {
+        const videoTrack = streamRef.current?.getVideoTracks()[0];
+        if (
+          videoTrack &&
+          wasCameraOnBeforeHideRef.current &&
+          !cameraOnRef.current
+        ) {
+          videoTrack.enabled = true;
+          if (videoProducerRef.current) {
+            videoProducerRef.current.resume();
+            await emit("resumeProducer", {
+              producerId: videoProducerRef.current.id,
+            });
+          }
+          Dispatch(clickOnCamera());
+          wasCameraOnBeforeHideRef.current = false;
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
+
   useEffect(() => {
     if (!id) {
       const stored = sessionStorage.getItem("user");
@@ -219,11 +267,6 @@ export default function VideoChat() {
       consumer,
       transport: recvTransport,
     };
-    // const stream = new MediaStream([consumer.track]);
-    // const videoEl = document.getElementById(
-    //   `remoteVideo-${userId}`,
-    // ) as HTMLVideoElement | null;
-    // if (videoEl) videoEl.srcObject = stream;
     const userId = data.producerUserId;
     console.log({ userId });
 
@@ -255,10 +298,6 @@ export default function VideoChat() {
     streamRef.current = stream;
     streamListRef.current[id].camera = stream;
     bump();
-    // const localVideo = document.getElementById("localVideo");
-    // if (localVideo) {
-    //   (localVideo as HTMLVideoElement).srcObject = stream;
-    // }
     const rtpCapabilities: mediasoupClient.types.RtpCapabilities = (await emit(
       "getRtpCapabilities",
     )) as mediasoupClient.types.RtpCapabilities;
@@ -361,19 +400,28 @@ export default function VideoChat() {
 
     videoChatSocket.on(
       "userLeft",
-      (userId: string, producerIds: string[], userName: string) => {
+      (
+        userId: string,
+        producerIds: string[] = [],
+        userName: string = "Someone",
+      ) => {
         const userStreams = streamListRef.current[userId];
-        producerIds.forEach((producerId) => {
-          const entry = consumersRef.current[producerId];
-          if (entry) {
-            entry.consumer.track.stop();
-            entry.consumer.close();
-            entry.transport.close();
-            delete consumersRef.current[producerId];
-          }
-        });
-        userStreams.camera?.getTracks().forEach((track) => track.stop());
-        userStreams.screen?.getTracks().forEach((track) => track.stop());
+        if (producerIds && Array.isArray(producerIds)) {
+          producerIds.forEach((producerId) => {
+            const entry = consumersRef.current[producerId];
+            if (entry) {
+              entry.consumer.track.stop();
+              entry.consumer.close();
+              entry.transport.close();
+              delete consumersRef.current[producerId];
+            }
+          });
+        }
+        if (userStreams) {
+          userStreams.camera?.getTracks().forEach((track) => track.stop());
+          userStreams.screen?.getTracks().forEach((track) => track.stop());
+          delete streamListRef.current[userId];
+        }
         Dispatch(userLeft({ userId }));
         Dispatch(
           showNotification({
@@ -391,7 +439,6 @@ export default function VideoChat() {
       if (videoChatSocket.connected) {
         videoChatSocket.disconnect();
       }
-      Dispatch(clearVideoChat());
     };
 
     window.addEventListener("pagehide", handleTabClose);
@@ -578,10 +625,22 @@ export default function VideoChat() {
           </span>
         ) : (
           <div className="videoTile-avatarFallback absolute inset-0 flex items-center justify-center">
-            <div
-              className="videoTile-avatarCircle bg-center bg-cover"
-              style={{ backgroundImage: `url(${user.pic})` }}
-            ></div>
+            <div className="videoTile-avatarCircle bg-bg-surface border border-[var(--border-subtle)] flex items-center justify-center text-text-secondary overflow-hidden shrink-0">
+              {user?.pic ? (
+                <img
+                  src={user.pic}
+                  alt={user.name || "User"}
+                  className="w-full h-full object-cover rounded-full"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "/userPic.jpg";
+                  }}
+                />
+              ) : (
+                <span className="text-[2.5rem] font-bold uppercase">
+                  {user?.name ? user.name[0] : "?"}
+                </span>
+              )}
+            </div>
           </div>
         )}
         <div className="videoTile-info absolute bottom-2 left-2 flex items-center gap-1">
@@ -613,9 +672,48 @@ export default function VideoChat() {
         </div>
         <div className="flex items-center gap-3">
           <span className="videoCall-userCount">
+            <div className="videoCall-avatarStack flex items-center">
+              {Object.entries(participants)
+                .slice(0, 2)
+                .map(([userId, participant], index) => (
+                  <div
+                    key={userId}
+                    className="videoCall-avatarStackItem"
+                    style={{
+                      zIndex: 2 - index,
+                      marginLeft: index === 0 ? 0 : "-12px",
+                    }}
+                    title={participant?.name || "Participant"}
+                  >
+                    {participant?.pic ? (
+                      <img
+                        src={participant.pic}
+                        alt={participant.name || "Participant"}
+                        className="videoCall-avatarStackImg"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/userPic.jpg";
+                        }}
+                      />
+                    ) : (
+                      <span className="videoCall-avatarStackInitial">
+                        {participant?.name ? participant.name[0] : "?"}
+                      </span>
+                    )}
+                  </div>
+                ))}
+
+              {totalUsers > 2 && (
+                <div
+                  className="videoCall-avatarStackItem videoCall-avatarStackMore"
+                  style={{ zIndex: 0, marginLeft: "-12px" }}
+                  title={`${totalUsers - 2} more`}
+                >
+                  +{totalUsers - 2}
+                </div>
+              )}
+            </div>
             {totalUsers} {totalUsers === 1 ? "participant" : "participants"}
           </span>
-          {/* <span className="videoCall-timer">00:00</span> */}
         </div>
       </header>
 
@@ -748,10 +846,22 @@ export default function VideoChat() {
                 const isMe = userId === id;
                 return (
                   <div key={userId} className="videoCallParticipantRow">
-                    <div
-                      className="videoCallParticipantRow-avatar bg-center bg-cover"
-                      style={{ backgroundImage: `url(${participant.pic})` }}
-                    ></div>
+                    <div className="videoCallParticipantRow-avatar bg-bg-surface border border-[var(--border-subtle)] flex items-center justify-center text-text-secondary overflow-hidden shrink-0">
+                      {participant.pic ? (
+                        <img
+                          src={participant.pic}
+                          alt={participant.name || "Participant"}
+                          className="w-full h-full object-cover rounded-full"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/userPic.jpg";
+                          }}
+                        />
+                      ) : (
+                        <span className="text-sm font-bold uppercase">
+                          {participant.name ? participant.name[0] : "?"}
+                        </span>
+                      )}
+                    </div>
                     <div className="videoCallParticipantRow-info">
                       <span className="videoCallParticipantRow-name">
                         {isMe ? "You" : participant.name}

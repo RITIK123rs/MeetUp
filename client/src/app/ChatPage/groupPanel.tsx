@@ -138,6 +138,7 @@ export default function GroupPanel({ setGroupPanelStatus }: GroupPanelProps) {
               const selected = selectedUser.some(
                 (user) => user.userId == contact.userId,
               );
+              console.log(contact);
               return (
                 <button
                   key={contact.userId}
@@ -162,12 +163,13 @@ export default function GroupPanel({ setGroupPanelStatus }: GroupPanelProps) {
                     )}
                   </span>
 
-                  <span
-                    className="gp-avatar"
-                    style={{
-                      backgroundImage: `url(${contact.picture ?? "/userPic.jpg"})`,
-                    }}
-                  />
+                  <span className="gp-avatar-wrap">
+                    <img
+                      src={contact.picture || "/default.jpg"}
+                      alt={contact.name}
+                      className="gp-avatar"
+                    />
+                  </span>
 
                   <span className="gp-person-info">
                     <span className="gp-person-name">{contact.name}</span>

@@ -13,9 +13,8 @@ export function SidebarEmptyState() {
         <HiOutlineUserAdd className="text-2xl text-accent-violet" />
       </div>
       <p className="text-[0.95rem] font-semibold text-text-primary">No contacts yet</p>
-      <p className="text-[0.82rem] text-text-muted mt-2 leading-relaxed max-w-[220px]">
-        Start a direct chat from the home page using a person&apos;s ID.
-      </p>
+      <p className="text-[0.82rem] text-text-muted mt-2 leading-relaxed max-w-[240px]">
+Go to the Home page, enter the person's ID, and start a direct chat instantly.      </p>
     </div>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { FaSearch } from "react-icons/fa";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { FaSearch, FaArrowLeft } from "react-icons/fa";
+import { FiMenu } from "react-icons/fi";
 import PersonBox from "./personBox";
 import { FaPlus } from "react-icons/fa";
 import { FiPaperclip } from "react-icons/fi";
@@ -20,6 +21,7 @@ import {
   SetActiveChatId,
   updateChatList,
   updateActiveChat,
+  updateUnReadMessage,
   setOnlineUsersList,
   setUserOnline,
   setUserOffline,
@@ -47,11 +49,13 @@ interface ActiveChatUser {
   groupName?: string;
   picture?: string;
 }
-
-export default function ChatPage() {
-  const chatId: string | null = useSelector(
+interface ChatPageProps {
+  onOpenMenu?: () => void;
+}
+export default function ChatPage({ onOpenMenu }: ChatPageProps) {
+  const chatId: string = useSelector(
     (state: RootState) => state.user.activeChatId,
-  );
+  ) as string;
   const [activeChat, setActiveChat] = useState<null | any>(null);
   const [activeChatId, setActiveChatId] = useState<string>(chatId);
   const [activeChatStatus, setActiveChatStatus] = useState<boolean | undefined>(
@@ -72,10 +76,15 @@ export default function ChatPage() {
   );
   const [search, setSearch] = useState<string>("");
   const [filterUserList, setFilterUserList] = useState<Chats[]>([]);
-
+  const [mobileChatOpen, setMobileChatOpen] = useState<boolean>(false);
   const userId: string | null = useSelector(
     (state: RootState) => state.user.id,
   );
+
+  const handleBack = useCallback(() => {
+    setActiveChat(null);
+    setActiveChatId("");
+  }, []);
 
   useEffect(() => {
     const query = search.trim().toLowerCase();
@@ -158,11 +167,14 @@ export default function ChatPage() {
     senderId: string;
     message: string;
   }): void {
-    if (activeChatIdRef.current != chatId) return;
+    if (activeChatIdRef.current != chatId) {
+      Dispatch(updateUnReadMessage({ chatId, message }));
+      return;
+    }
+    
     if (!activeChatRef.current) return;
 
     // console.log("handleNewMessage :-", { chatId, senderId, message });
-
     // console.log("receive message (update)");
 
     Dispatch(
@@ -351,10 +363,22 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="chatPage flex h-full relative">
+    <div
+      className={`chatPage flex h-full relative ${activeChatId ? "has-active-chat" : ""}`}
+    >
       <aside className="chatSidebar w-[320px] shrink-0 h-full px-3 py-4 flex flex-col">
         <div className="chatSidebar-header flex items-center justify-between px-1">
-          <h1>Messages</h1>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="chat-sidebar-menu-btn text-text-secondary hover:text-text-primary p-1.5 rounded-lg hover:bg-[var(--bg-hover)] md:hidden transition-colors"
+              onClick={onOpenMenu}
+              title="Open Navigation"
+            >
+              <FiMenu className="text-xl" />
+            </button>
+            <h1>Messages</h1>
+          </div>
           <button
             className="groupCreate flex items-center"
             onClick={() => setGroupPanelStatus(true)}
@@ -436,15 +460,36 @@ export default function ChatPage() {
           <ChatEmptyState variant="no-selection" />
         ) : (
           <>
-            <header className="chatHeader flex items-center px-4 py-3">
-              <span
-                className="w-[60px] h-[60px] rounded-full bg-cover bg-center"
-                style={{
-                  backgroundImage: `url(${activeChatUser.picture})`,
-                }}
-              />
+            <header className="chatHeader flex items-center px-3 md:px-4 py-3">
+              <button
+                type="button"
+                className="chat-back-btn flex items-center justify-center p-2 rounded-full mr-2 text-text-primary hover:bg-[var(--bg-hover)] md:hidden transition-colors"
+                onClick={handleBack}
+                title="Back to chat list"
+              >
+                <FaArrowLeft className="text-lg" />
+              </button>
+              <div className="w-[60px] h-[60px] rounded-full bg-bg-surface border border-[var(--border-subtle)] flex items-center justify-center text-text-secondary overflow-hidden shrink-0">
+                {activeChatUser.picture ? (
+                  <img
+                    src={activeChatUser.picture}
+                    alt={
+                      isGroupChat
+                        ? activeChatUser.groupName
+                        : activeChatUser.name?.[0]
+                    }
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-2xl font-bold uppercase">
+                    {isGroupChat
+                      ? activeChatUser.groupName?.[0]
+                      : activeChatUser.name?.[0]?.[0] || "?"}
+                  </span>
+                )}
+              </div>
               <div className="ms-3 flex flex-col gap-0.5">
-                <span className="chat-name">
+                <span className="chat-name ">
                   {isGroupChat
                     ? activeChatUser.groupName
                     : activeChatUser.name?.[0]}
@@ -460,7 +505,7 @@ export default function ChatPage() {
                   {isGroupChat ? null : activeChatStatus ? "Online" : "Offline"}
                 </span>
               </div>
-              <button className="menu-btn ms-auto">
+              <button className="menu-btn ms-auto shrink-0">
                 <BsThreeDotsVertical />
               </button>
             </header>

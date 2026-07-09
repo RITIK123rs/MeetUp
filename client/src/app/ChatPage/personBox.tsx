@@ -6,7 +6,7 @@ type PersonBoxProps = {
   picture: string;
   preview: string;
   isGroup: boolean;
-  lastMessageAt: Date;
+  lastMessageAt: Date | string;
   unreadCount?: number;
   online?: boolean;
   onClick?: () => void;
@@ -33,10 +33,12 @@ export default function PersonBox({
       onClick={onClick}
     >
       <div className="imageBox w-11 h-11 flex justify-center items-center rounded-full relative">
-        <span className="w-[100%] h-[100%] rounded-full bg-cover bg-center" style={{
-              backgroundImage: `url(${picture})`,
-            }} />
-        { !isGroup && online && (
+        <img
+          src={picture ?? "/default.jpg"}
+          alt={name}
+          className="w-full h-full rounded-full object-cover"
+        />
+        {!isGroup && online && (
           <span className="online-dot absolute w-2.5 h-2.5 bottom-0 right-0 rounded-full bg-green-500 z-10" />
         )}
       </div>
@@ -45,7 +47,9 @@ export default function PersonBox({
         <span className="person-preview truncate">{preview}</span>
       </div>
       <div className="person-meta flex flex-col items-end shrink-0 gap-1.5">
-        <span className="person-date">{formatConversationTime(lastMessageAt)}</span>
+        <span className="person-date">
+          {formatConversationTime(lastMessageAt)}
+        </span>
         {hasUnread && <span className="unread-badge">{displayCount}</span>}
       </div>
     </button>

@@ -16,7 +16,7 @@ interface Chats {
   chatId: string;
   unreadCount: number;
   lastMessageTime: string | Date;
-  onlineStatus?: boolean ;
+  onlineStatus?: boolean;
 }
 
 interface UserState {
@@ -68,20 +68,23 @@ const userSlice = createSlice({
       console.log(state.activeChatId);
     },
     updateUnReadMessage: (state, action) => {
-      console.log("updateUnReadMessage",state.activeChatId);
-      if(state.activeChatId ==  action.payload.chatId) return;
+      console.log("updateUnReadMessage", state.activeChatId);
+      if (state.activeChatId == action.payload.chatId) return;
       const index = state.chats.findIndex(
         (chat) => chat.chatId === action.payload.chatId,
       );
       state.chats[index].preview = action.payload.message;
       state.chats[index].lastMessageTime = new Date().toISOString();
       state.chats[index].unreadCount += 1;
-
     },
     updateActiveChat: (state, action) => {
       const index = state.chats.findIndex(
         (chat) => chat.chatId === action.payload.chatId,
       );
+      if (index === -1) {
+        console.warn("updateActiveChat: chat not found", action.payload.chatId);
+        return;
+      }
       state.chats[index].preview = action.payload.message;
       state.chats[index].lastMessageTime = new Date().toISOString();
     },
@@ -95,21 +98,27 @@ const userSlice = createSlice({
     },
     setUserOnline: (state, action) => {
       const index = state.chats.findIndex(
-        (chat) => chat.UserId == action.payload,
+        (chat) => chat.UserId[0] == action.payload,
       );
+      if (index === -1) {
+        console.warn("setUserOnline: no chat found for user", action.payload);
+        return;
+      }
       console.log(current(state));
-      if(!state.chats[index].onlineStatus){
+      if (!state.chats[index].onlineStatus) {
         state.chats[index].onlineStatus = true;
       }
       console.log("user online : ", action.payload);
     },
     setUserOffline: (state, action) => {
       const index = state.chats.findIndex(
-        (chat) => chat.UserId == action.payload,
+        (chat) => chat.UserId[0] == action.payload,
       );
-      if(!state.chats[index].onlineStatus){
-        state.chats[index].onlineStatus = false;
+      if (index === -1) {
+        console.warn("setUserOnline: no chat found for user", action.payload);
+        return;
       }
+      state.chats[index].onlineStatus = false;
       console.log("user offline : ", action.payload);
     },
     addNewUser: (state, action) => {
@@ -137,13 +146,10 @@ const userSlice = createSlice({
     addNewGroup: (state, action) => {
       state.groupNo += 1;
       state.chats.push(action.payload);
-      console.log(
-        "Redux groupChat :- ",
-        current(state.chats)
-      );
+      console.log("Redux groupChat :- ", current(state.chats));
     },
-    incrementVideoChatCount: (state)=>{
-      state.videoChatNo +=1;
+    incrementVideoChatCount: (state) => {
+      state.videoChatNo += 1;
     },
     clearUser: () => initialState,
   },

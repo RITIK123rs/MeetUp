@@ -57,7 +57,7 @@ export default function Message({
               className={` flex flex-col gap-1.5 ${data.sender == userId ? "" : "items-end"}`}
             >
               <div
-                className={`messageBubble whitespace-pre-wrap ${data.textMessage == true ? "text-[0.9rem]" : "text-[3rem]"} `}
+                className={`messageBubble whitespace-pre-wrap ${data.textMessage == true ? "text-[0.9rem]" : "emojiBubble text-[3rem]"} `}
               >
                 {data.text}
                 <span className="messageTime">
