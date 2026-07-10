@@ -128,7 +128,10 @@ export default function LoginPage() {
       } else {
         // console.log("Login Failed");
         Dispatch(
-          showNotification({ message: "Invalid email or password", type: "error" }),
+          showNotification({
+            message: "Invalid email or password",
+            type: "error",
+          }),
         );
       }
     } catch (err) {
@@ -157,7 +160,6 @@ export default function LoginPage() {
         if (userData.success) {
           sessionStorage.setItem("user", JSON.stringify(userData));
           Dispatch(setUser(userData));
-          // console.log("login socket.io");
           socket.disconnect();
           socket.auth = {
             id: userData.id,
@@ -189,7 +191,26 @@ export default function LoginPage() {
     onError: () => {
       setIsGoogleLoggingIn(false);
       Dispatch(
-        showNotification({ message: "Google sign-in failed. Please try again.", type: "error" }),
+        showNotification({
+          message: "Google sign-in failed. Please try again.",
+          type: "error",
+        }),
+      );
+    },
+    onNonOAuthError: (error) => {
+      // Fires when popup is closed manually, blocked, or fails to open
+      setIsGoogleLoggingIn(false);
+
+      if (error.type === "popup_closed") {
+        // User closed it themselves — usually no need to show an error toast
+        return;
+      }
+
+      Dispatch(
+        showNotification({
+          message: "Google sign-in was interrupted. Please try again.",
+          type: "error",
+        }),
       );
     },
   });
