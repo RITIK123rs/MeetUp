@@ -13,6 +13,9 @@ interface ActiveUser {
 let activeUser: ActiveUser = {};
 
 export default function initializeSocket(io: Server) {
+
+  console.log("socket function ");
+
   io.use((socket, next) => {
     console.log("A user is trying to connect");
     const { id, name, email } = socket.handshake.auth;

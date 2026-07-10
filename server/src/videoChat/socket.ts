@@ -86,6 +86,9 @@ function getParams(t: mediasoup.types.WebRtcTransport): TransportParams {
 }
 
 export default async function initializeVideoCallSocket(videoChat: Namespace) {
+
+  console.log("videoChat socket function ");
+
   await init();
 
   videoChat.on("connection", (socket) => {
