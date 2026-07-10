@@ -106,7 +106,9 @@ export default function homePage() {
       );
     });
 
-    socket.on("connect_error", () => {
+    socket.on("connect_error", (err) => {
+      console.log(err);
+      console.log(err.message);
       Dispatch(
         showNotification({
           message: "Connection lost. Trying to reconnect...",
