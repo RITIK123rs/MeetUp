@@ -69,6 +69,7 @@ export default function ChatPage({ onOpenMenu }: ChatPageProps) {
   const [isGroupChat, setIsGroupChat] = useState<boolean>(false);
   const activeChatIdRef = useRef(activeChatId);
   const activeChatRef = useRef(activeChat);
+  const activeChatUserIdRef = useRef<string | undefined>(undefined);
   const [groupPanelStatus, setGroupPanelStatus] = useState<boolean>(false);
   const [activeChatUser, setActiveChatUser] = useState<ActiveChatUser>({});
   const personChatList: Chats[] = useSelector(
@@ -121,6 +122,9 @@ export default function ChatPage({ onOpenMenu }: ChatPageProps) {
   useEffect(() => {
     activeChatRef.current = activeChat;
   }, [activeChat]);
+  useEffect(() => {
+    activeChatUserIdRef.current = activeChatUser?.id;
+  }, [activeChatUser]);
 
   useEffect(() => {
     Dispatch(SetActiveChatId(activeChatId));
@@ -133,12 +137,12 @@ export default function ChatPage({ onOpenMenu }: ChatPageProps) {
     });
     socket.on("userOnline", (userId: string) => {
       // console.log("online user :- ", userId);
-      if (userId == activeChatIdRef.current) setActiveChatStatus(true);
+      if (userId == activeChatUserIdRef.current) setActiveChatStatus(true);
       Dispatch(setUserOnline(userId));
     });
     socket.on("userOffline", (userId: string) => {
       // console.log("offline user :- ", userId);
-      if (userId == activeChatIdRef.current) setActiveChatStatus(false);
+      if (userId == activeChatUserIdRef.current) setActiveChatStatus(false);
       Dispatch(setUserOffline(userId));
     });
 
@@ -171,7 +175,7 @@ export default function ChatPage({ onOpenMenu }: ChatPageProps) {
       Dispatch(updateUnReadMessage({ chatId, message }));
       return;
     }
-    
+
     if (!activeChatRef.current) return;
 
     // console.log("handleNewMessage :-", { chatId, senderId, message });
@@ -220,7 +224,7 @@ export default function ChatPage({ onOpenMenu }: ChatPageProps) {
       // console.log({ data });
       setActiveChat({
         ...current,
-        messageGroups: current.messageGroups.map((group: any, index:number) =>
+        messageGroups: current.messageGroups.map((group: any, index: number) =>
           index === lastChatIndex
             ? { ...group, chats: [...group.chats, data] }
             : group,
@@ -331,13 +335,14 @@ export default function ChatPage({ onOpenMenu }: ChatPageProps) {
 
       setActiveChat({
         ...activeChat,
-        messageGroups: activeChat.messageGroups.map((group: any, index:number) =>
-          index == lastChatIndex
-            ? {
-                ...group,
-                chats: [...group.chats, data],
-              }
-            : group,
+        messageGroups: activeChat.messageGroups.map(
+          (group: any, index: number) =>
+            index == lastChatIndex
+              ? {
+                  ...group,
+                  chats: [...group.chats, data],
+                }
+              : group,
         ),
         lastMessage: messageType == "text" ? sendMessage : emoji,
         lastMessageAt: new Date(),
@@ -511,7 +516,7 @@ export default function ChatPage({ onOpenMenu }: ChatPageProps) {
             </header>
 
             <div className="messageBoxScreen overflow-y-auto px-4 py-4 flex flex-col">
-              {activeChat.messageGroups.map((data:any, index: number) => {
+              {activeChat.messageGroups.map((data: any, index: number) => {
                 return (
                   <span key={index}>
                     <>
