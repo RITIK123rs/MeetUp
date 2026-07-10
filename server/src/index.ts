@@ -33,6 +33,7 @@ const videoChat = io.of("/videoChat");
 initializeVideoCallSocket(videoChat);
 
 app.get("/health", (req, res) => {
+    console.log("Server is Running Successfully")
     res.json("Server is Running Successfully");
 });
 
