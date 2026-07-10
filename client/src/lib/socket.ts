@@ -7,8 +7,10 @@ console.log("Server URL :- ",server_url);
 
 export const socket = io(server_url, {
     autoConnect: false,
+    transports: ["websocket", "polling"],
 });
 
 export const videoChatSocket = io(`${server_url}/videoChat`, {
     autoConnect: false,
+    transports: ["websocket", "polling"],
 });
