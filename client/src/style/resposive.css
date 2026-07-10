@@ -528,6 +528,92 @@
   }
 }
 
+.banner-bg,
+.banner-row-1,
+.banner-row-2,
+.banner-stats-container,
+.banner-profile-card {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.homepage-main-container {
+  overflow-x: hidden !important;
+}
+
+.banner-profile-card > div:last-child {
+  display: none !important;
+}
+
+.banner-profile-card {
+  padding-right: 14px !important;
+}
+
+.banner-profile-card > div:nth-child(2) {
+  padding-right: 0 !important;
+}
+
+@media (max-width: 480px) {
+  .banner-bg {
+    padding: 14px !important;
+    gap: 12px !important;
+  }
+
+  /* Greeting text ("Good Morning, Name") */
+  .banner-row-1 p:first-child {
+    font-size: 1.35rem !important;
+    line-height: 1.25 !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+  }
+
+  .banner-row-1 p:last-child {
+    font-size: 0.82rem !important;
+  }
+
+  .banner-stats-container > div {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+
+  .banner-stats-container .w-11 {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 1.2rem !important;
+  }
+
+  .banner-profile-card {
+    padding: 12px 14px !important;
+    gap: 10px !important;
+  }
+
+  .banner-profile-card > div:first-child {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .banner-profile-card h2 {
+    font-size: 0.92rem !important;
+  }
+
+  .banner-profile-card p {
+    font-size: 0.78rem !important;
+  }
+}
+
+@media (max-width: 340px) {
+  .banner-stats-container {
+    grid-template-columns: 1fr !important;
+  }
+
+  .banner-stats-container > div:nth-child(3) {
+    grid-column: auto !important;
+    justify-self: stretch !important;
+    width: 100% !important;
+  }
+}
+
 @media (max-width: 400px) {
   .banner-stats-container {
     grid-template-columns: 1fr !important;
