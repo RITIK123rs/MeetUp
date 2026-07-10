@@ -2,7 +2,7 @@ import { formatConversationTime } from "@/lib/formatTime";
 
 type PersonBoxProps = {
   active?: boolean;
-  name: string;
+  name: string | undefined;
   picture: string;
   preview: string;
   isGroup: boolean;

@@ -511,7 +511,7 @@ export default function ChatPage({ onOpenMenu }: ChatPageProps) {
             </header>
 
             <div className="messageBoxScreen overflow-y-auto px-4 py-4 flex flex-col">
-              {activeChat.messageGroups.map((data, index: number) => {
+              {activeChat.messageGroups.map((data:any, index: number) => {
                 return (
                   <span key={index}>
                     <>
