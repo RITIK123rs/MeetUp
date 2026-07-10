@@ -133,12 +133,12 @@ export default function ChatPage({ onOpenMenu }: ChatPageProps) {
     });
     socket.on("userOnline", (userId: string) => {
       // console.log("online user :- ", userId);
-      if (userId == activeChatId) setActiveChatStatus(true);
+      if (userId == activeChatIdRef.current) setActiveChatStatus(true);
       Dispatch(setUserOnline(userId));
     });
     socket.on("userOffline", (userId: string) => {
       // console.log("offline user :- ", userId);
-      if (userId == activeChatId) setActiveChatStatus(false);
+      if (userId == activeChatIdRef.current) setActiveChatStatus(false);
       Dispatch(setUserOffline(userId));
     });
 
