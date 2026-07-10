@@ -14,9 +14,9 @@ let activeUser: ActiveUser = {};
 
 export default function initializeSocket(io: Server) {
   io.use((socket, next) => {
-    // console.log("A user is trying to connect");
+    console.log("A user is trying to connect");
     const { id, name, email } = socket.handshake.auth;
-    // console.log(id, name, email);
+    console.log(id, name, email);
 
     if (!id) return next(new Error("No user ID"));
 
@@ -32,7 +32,7 @@ export default function initializeSocket(io: Server) {
   });
 
   io.on("connection", (socket) => {
-    // console.log("User Connected : ", socket.id);
+    console.log("User Connected : ", socket.id);
     // console.log(activeUser, "user Id :- ", socket.data.userId);
     socket.broadcast.emit("userOnline", socket.data.userId);
 
@@ -134,7 +134,7 @@ export default function initializeSocket(io: Server) {
     });
 
     socket.on("disconnect", () => {
-      // console.log("user Disconnected : ", socket.id);
+      console.log("user Disconnected : ", socket.id);
       const userId: string = Object.keys(activeUser).find(
         (id) => activeUser[id].socketId == socket.id,
       ) as string;
