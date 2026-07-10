@@ -220,7 +220,7 @@ export default function ChatPage({ onOpenMenu }: ChatPageProps) {
       // console.log({ data });
       setActiveChat({
         ...current,
-        messageGroups: current.messageGroups.map((group, index) =>
+        messageGroups: current.messageGroups.map((group: any, index:number) =>
           index === lastChatIndex
             ? { ...group, chats: [...group.chats, data] }
             : group,
@@ -331,7 +331,7 @@ export default function ChatPage({ onOpenMenu }: ChatPageProps) {
 
       setActiveChat({
         ...activeChat,
-        messageGroups: activeChat.messageGroups.map((group, index) =>
+        messageGroups: activeChat.messageGroups.map((group: any, index:number) =>
           index == lastChatIndex
             ? {
                 ...group,
