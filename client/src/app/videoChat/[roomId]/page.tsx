@@ -321,7 +321,7 @@ export default function VideoChat() {
       "produce",
       ({ kind, rtpParameters, appData }, callback, errback) => {
         emit("produce", { kind, rtpParameters, appData })
-          .then((r) => callback({ id: r.id }))
+          .then((r) => callback({ id: (r as { id: string }).id }))
           .catch(errback);
       },
     );

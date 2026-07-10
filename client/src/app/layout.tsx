@@ -8,23 +8,27 @@ export const metadata: Metadata = {
   title: "MeetUp",
   description: "Real-time Chat & Video Calling",
   icons: {
-    icon: "/MeetUpIcon.ico",         
+    icon: "/MeetUpIcon.ico",
     shortcut: "/MeetUpIcon.ico",
-    apple: "/MeetUpIcon.ico",      
+    apple: "/MeetUpIcon.ico",
   },
 };
 
-export default function RootLayout({children}) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-   <html lang="en">
-    <body>
+    <html lang="en">
+      <body>
         <Providers>
           <ReduxInit>
             <Notification />
             {children}
           </ReduxInit>
-          </Providers>
+        </Providers>
       </body>
-   </html>
-  )
+    </html>
+  );
 }

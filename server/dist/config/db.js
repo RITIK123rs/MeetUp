@@ -1,8 +1,13 @@
-import mongoose from "mongoose";
-export default async function connectDB() {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = connectDB;
+const mongoose_1 = __importDefault(require("mongoose"));
+async function connectDB() {
     try {
-        console.log(process.env.MONGODB_URL);
-        await mongoose.connect(process.env.MONGODB_URL);
+        await mongoose_1.default.connect(process.env.MONGODB_URL);
         console.log("Database Connected Successfully");
     }
     catch (err) {
@@ -11,4 +16,3 @@ export default async function connectDB() {
         process.exit(1);
     }
 }
-//# sourceMappingURL=db.js.map
