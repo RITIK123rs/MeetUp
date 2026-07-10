@@ -1,5 +1,5 @@
-import chat from "@/models/chat";
-import user from "@/models/user";
+import chat from "../../models/chat";
+import user from "../../models/user";
 
 export async function addMessage(
   messageType: "new" | "existing",

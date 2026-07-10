@@ -1,7 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
-import chat from "@/models/chat";
-import user from "@/models/user";
+import chat from "../models/chat"
+import user from "../models/user";
 
 const router = express.Router();
 
