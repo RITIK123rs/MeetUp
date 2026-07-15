@@ -68,7 +68,7 @@ export default function GroupPanel({ setGroupPanelStatus }: GroupPanelProps) {
     }
     if (!id) return;
     // console.log(selectedUser);
-    const res = await axios.post("http://localhost:5000/newGroupAdd", {
+    const res = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL!}/newGroupAdd`, {
       groupName: groupName.trim(),
       users: selectedUser,
     });
