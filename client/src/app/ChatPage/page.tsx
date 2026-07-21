@@ -37,6 +37,7 @@ interface Chats {
   preview: string;
   groupName?: string;
   isGroup: boolean;
+  messageType?: string;
   chatId: string;
   unreadCount: number;
   lastMessageTime: string | Date;
@@ -166,10 +167,12 @@ export default function ChatPage({ onOpenMenu }: ChatPageProps) {
     chatId,
     senderId,
     message,
+    messageType
   }: {
     chatId: string;
     senderId: string;
     message: string;
+    messageType: string,
   }): void {
     if (activeChatIdRef.current != chatId) {
       Dispatch(updateUnReadMessage({ chatId, message }));
@@ -199,7 +202,7 @@ export default function ChatPage({ onOpenMenu }: ChatPageProps) {
         chats: [
           {
             sender: senderId,
-            textMessage: true,
+            textMessage: messageType == "text" ? true : false,
             text: message,
             createdAt: new Date(),
           },
@@ -216,7 +219,7 @@ export default function ChatPage({ onOpenMenu }: ChatPageProps) {
       const data = {
         id: Date.now(),
         sender: senderId,
-        textMessage: true,
+        textMessage: messageType == "text" ? true : false,
         text: message,
         createdAt: new Date(),
       };
@@ -322,6 +325,7 @@ export default function ChatPage({ onOpenMenu }: ChatPageProps) {
         senderId: userId,
         data,
         sendMessage: messageType == "text" ? sendMessage : emoji,
+        messageType,
       });
     } else {
       const data = {
@@ -354,6 +358,7 @@ export default function ChatPage({ onOpenMenu }: ChatPageProps) {
         senderId: userId,
         data,
         sendMessage: messageType == "text" ? sendMessage : emoji,
+        messageType,
       });
     }
 

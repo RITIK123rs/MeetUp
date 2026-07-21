@@ -47,7 +47,7 @@ export default function initializeSocket(io: Server) {
       activeUser[userId].activeChatId = chatId;
     });
 
-    socket.on("newMessage-new", ({ userList, chatId, data, sendMessage }) => {
+    socket.on("newMessage-new", ({ userList, chatId, data, sendMessage, messageType }) => {
       // console.log(userList, chatId, data, sendMessage);
       addMessage("new", chatId, data, sendMessage);
       const senderId: string = Object.keys(activeUser).find(
@@ -64,6 +64,7 @@ export default function initializeSocket(io: Server) {
             chatId,
             senderId,
             message: sendMessage,
+            messageType,
           });
         } else {
           // console.log("user not found");
@@ -75,7 +76,7 @@ export default function initializeSocket(io: Server) {
     });
     socket.on(
       "newMessage-existing",
-      ({ userList, senderId, chatId, data, sendMessage }) => {
+      ({ userList, senderId, chatId, data, sendMessage, messageType }) => {
         // console.log(userList, chatId, data, sendMessage);
         addMessage("existing", chatId, data, sendMessage);
         for (const userId of userList) {
@@ -91,6 +92,7 @@ export default function initializeSocket(io: Server) {
               chatId,
               senderId,
               message: sendMessage,
+              messageType,
             });
           } else {
             // console.log("user not found");
